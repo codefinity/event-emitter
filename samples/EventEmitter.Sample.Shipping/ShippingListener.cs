@@ -1,7 +1,7 @@
-using EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Inventory;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Shipping;
+namespace Codefinity.EventEmitter.Sample.Shipping;
 
 internal sealed class ShippingListener(CarrierGateway carrier, ILogger<ShippingListener> logger)
 {

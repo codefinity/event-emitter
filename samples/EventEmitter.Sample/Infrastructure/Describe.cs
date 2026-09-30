@@ -1,4 +1,4 @@
-namespace EventEmitter.Sample.Infrastructure;
+namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 internal static class Describe
 {

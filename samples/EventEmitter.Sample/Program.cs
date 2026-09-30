@@ -1,4 +1,4 @@
-using EventEmitter.Sample.Examples;
+using Codefinity.EventEmitter.Sample.Examples;
 
 // Runnable examples of every EventEmitter capability.
 //

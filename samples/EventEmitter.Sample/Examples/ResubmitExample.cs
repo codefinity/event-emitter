@@ -1,10 +1,10 @@
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
-using EventEmitter.Sample.Shipping;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Shipping;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// A module listener fails: the publication stays incomplete with its failure recorded, other listeners are

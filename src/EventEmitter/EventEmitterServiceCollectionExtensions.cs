@@ -1,6 +1,6 @@
-using EventEmitter;
-using EventEmitter.Dispatch;
-using EventEmitter.Listeners;
+using Codefinity.EventEmitter;
+using Codefinity.EventEmitter.Dispatch;
+using Codefinity.EventEmitter.Listeners;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection;

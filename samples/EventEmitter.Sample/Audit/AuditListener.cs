@@ -1,7 +1,7 @@
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Audit;
+namespace Codefinity.EventEmitter.Sample.Audit;
 
 public sealed class AuditListener(ILogger<AuditListener> logger)
 {

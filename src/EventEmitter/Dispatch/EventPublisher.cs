@@ -1,8 +1,8 @@
-using EventEmitter.Listeners;
+using Codefinity.EventEmitter.Listeners;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Dispatch;
+namespace Codefinity.EventEmitter.Dispatch;
 
 internal sealed class EventPublisher(
     IServiceProvider services,

@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Marks a method as an asynchronous, transactional event listener, like Spring Modulith's

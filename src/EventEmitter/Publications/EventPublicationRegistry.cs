@@ -1,6 +1,6 @@
-using EventEmitter.Dispatch;
+using Codefinity.EventEmitter.Dispatch;
 
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Publications whose listener hasn't handled the event successfully yet, like Spring Modulith's

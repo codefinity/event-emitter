@@ -1,10 +1,10 @@
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// An exception from an <see cref="EventListenerAttribute"/> listener comes out of PublishAsync. The publisher's

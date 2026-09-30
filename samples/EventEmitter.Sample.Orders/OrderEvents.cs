@@ -1,4 +1,4 @@
-namespace EventEmitter.Sample.Orders;
+namespace Codefinity.EventEmitter.Sample.Orders;
 
 // The Orders module's public events. Other modules may listen for them; nothing else in Orders is their business.
 

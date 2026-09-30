@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace EventEmitter.Sample.Shipping;
+namespace Codefinity.EventEmitter.Sample.Shipping;
 
 /// <summary>
 /// Stands in for an external carrier API. Set <see cref="IsAvailable"/> to false to simulate an outage.

@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>What happens to a publication once its listener has handled the event.</summary>
 public enum CompletionMode

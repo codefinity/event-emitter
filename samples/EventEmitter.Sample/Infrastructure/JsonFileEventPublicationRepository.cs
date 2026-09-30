@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace EventEmitter.Sample.Infrastructure;
+namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 /// <summary>
 /// A durable <see cref="IEventPublicationRepository"/> that keeps publications in a JSON file, so they

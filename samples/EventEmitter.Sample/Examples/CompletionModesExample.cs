@@ -1,9 +1,9 @@
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// What happens to publications after their listener succeeds: kept with a completion date

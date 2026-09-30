@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// Automatic retries built from IIncompleteEventPublications: a background job resubmits failed

@@ -1,9 +1,9 @@
 using System.Reflection;
-using EventEmitter.Listeners;
+using Codefinity.EventEmitter.Listeners;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>Registers listeners and replaces EventEmitter's default services.</summary>
 public sealed class EventEmitterBuilder

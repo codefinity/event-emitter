@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Marks a method as a synchronous event listener, like Spring's <c>@EventListener</c>.

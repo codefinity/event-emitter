@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Sample.Inventory;
+namespace Codefinity.EventEmitter.Sample.Inventory;
 
 public static class InventoryModule
 {

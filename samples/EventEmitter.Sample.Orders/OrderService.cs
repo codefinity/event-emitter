@@ -1,7 +1,7 @@
 using System.Transactions;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Orders;
+namespace Codefinity.EventEmitter.Sample.Orders;
 
 public sealed class OrderService(IEventPublisher events, ILogger<OrderService> logger)
 {

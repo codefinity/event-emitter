@@ -1,6 +1,6 @@
 using System.Transactions;
 
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Uses the ambient <see cref="Transaction.Current"/>. Create transaction scopes with

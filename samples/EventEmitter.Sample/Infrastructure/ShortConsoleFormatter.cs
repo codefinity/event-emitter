@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 
-namespace EventEmitter.Sample.Infrastructure;
+namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 /// <summary>
 /// One line per log entry: the thread that logged it, the short category name, and the message.

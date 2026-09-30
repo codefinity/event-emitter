@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Testing;
+namespace Codefinity.EventEmitter.Testing;
 
 /// <summary>
 /// Drives a module test the way Spring Modulith's <c>Scenario</c> does: run a stimulus, then wait for an event or a

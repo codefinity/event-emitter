@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace EventEmitter.Listeners;
+namespace Codefinity.EventEmitter.Listeners;
 
 /// <summary>
 /// Finds and validates the methods marked with <see cref="EventListenerAttribute"/> or

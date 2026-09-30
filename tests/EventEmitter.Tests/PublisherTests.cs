@@ -1,7 +1,7 @@
 using System.Transactions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public interface ITick
 {

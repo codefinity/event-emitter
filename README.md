@@ -47,7 +47,7 @@ The library isn't published to NuGet. Reference the project directly:
 </ItemGroup>
 ```
 
-Public types live in the `EventEmitter` namespace (`EventEmitter.Testing` for the test helpers). The registration methods are in `Microsoft.Extensions.DependencyInjection`, so they show up on `IServiceCollection` without an extra `using`.
+Public types live in the `Codefinity.EventEmitter` namespace (`Codefinity.EventEmitter.Testing` for the test helpers). The registration methods are in `Microsoft.Extensions.DependencyInjection`, so they show up on `IServiceCollection` without an extra `using`.
 
 ## Quick start
 
@@ -59,7 +59,7 @@ An event is any object. Immutable records work best.
 
 ```csharp
 // samples/EventEmitter.Sample.Orders/OrderEvents.cs (trimmed)
-namespace EventEmitter.Sample.Orders;
+namespace Codefinity.EventEmitter.Sample.Orders;
 
 public sealed record OrderCompleted(string OrderId, string CustomerId) : IOrderEvent;
 ```
@@ -88,7 +88,7 @@ Put an attribute on any method whose first parameter is the event:
 
 ```csharp
 // samples/EventEmitter.Sample.Inventory/InventoryListener.cs (trimmed)
-namespace EventEmitter.Sample.Inventory;
+namespace Codefinity.EventEmitter.Sample.Inventory;
 
 internal sealed class InventoryListener(IEventPublisher events, ILogger<InventoryListener> logger)
 {
@@ -1075,8 +1075,8 @@ To test time-based behaviour such as `ResubmitOlderThanAsync` or `DeletePublicat
 | `CompletedEventPublications` | `ICompletedEventPublications` |
 | `spring.modulith.events.completion-mode` | `EventEmitterOptions.CompletionMode` |
 | `spring.modulith.events.republish-outstanding-events-on-restart` | `EventEmitterOptions.RepublishOutstandingEventsOnStartup` |
-| `Scenario` | `Scenario` (`EventEmitter.Testing`) |
-| `PublishedEvents` | `PublishedEvents` (`EventEmitter.Testing`) |
+| `Scenario` | `Scenario` (`Codefinity.EventEmitter.Testing`) |
+| `PublishedEvents` | `PublishedEvents` (`Codefinity.EventEmitter.Testing`) |
 
 ## Running the samples
 

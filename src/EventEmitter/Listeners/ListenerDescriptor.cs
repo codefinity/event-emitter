@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace EventEmitter.Listeners;
+namespace Codefinity.EventEmitter.Listeners;
 
 internal enum ListenerMode
 {

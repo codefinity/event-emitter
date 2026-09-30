@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using EventEmitter.Testing;
+using Codefinity.EventEmitter.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class ScenarioTests
 {

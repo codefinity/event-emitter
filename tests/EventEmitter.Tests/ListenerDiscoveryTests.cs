@@ -1,8 +1,8 @@
-using EventEmitter.Listeners;
-using EventEmitter.Testing;
+using Codefinity.EventEmitter.Listeners;
+using Codefinity.EventEmitter.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class ListenerDiscoveryTests
 {

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Sample.Orders;
+namespace Codefinity.EventEmitter.Sample.Orders;
 
 public static class OrdersModule
 {

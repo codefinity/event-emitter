@@ -1,11 +1,11 @@
-using EventEmitter.Sample.Audit;
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
-using EventEmitter.Sample.Shipping;
+using Codefinity.EventEmitter.Sample.Audit;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Shipping;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// OrderService publishes inside a TransactionScope. Module listeners run only if it commits;

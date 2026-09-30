@@ -1,9 +1,9 @@
-using EventEmitter.Sample.Infrastructure;
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// Every supported listener method shape, in one class with no interface or base class.

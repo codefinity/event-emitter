@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace EventEmitter.Sample.Shipping;
+namespace Codefinity.EventEmitter.Sample.Shipping;
 
 public static class ShippingModule
 {

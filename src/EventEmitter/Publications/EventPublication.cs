@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// A record of one event being delivered to one <see cref="ApplicationModuleListenerAttribute"/> listener.

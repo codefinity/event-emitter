@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 
-namespace EventEmitter.Sample.Infrastructure;
+namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 /// <summary>
 /// A running Generic Host for one example, with helpers to publish, narrate and wait.

@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Publishes application events to every listener method whose event parameter accepts the event.

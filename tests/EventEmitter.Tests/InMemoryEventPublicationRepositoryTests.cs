@@ -1,4 +1,4 @@
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class InMemoryEventPublicationRepositoryTests
 {

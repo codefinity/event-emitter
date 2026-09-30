@@ -1,4 +1,4 @@
-namespace EventEmitter.Sample.Infrastructure;
+namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 /// <summary>
 /// A <see cref="TimeProvider"/> the example moves by hand, to show time-based features without waiting.

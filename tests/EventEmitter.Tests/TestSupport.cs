@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public interface IOrderEvent
 {

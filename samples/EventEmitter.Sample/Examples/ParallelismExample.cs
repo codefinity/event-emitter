@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using EventEmitter.Sample.Infrastructure;
+using Codefinity.EventEmitter.Sample.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Examples;
+namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
 /// MaxDegreeOfParallelism limits how many module listeners run at the same time.

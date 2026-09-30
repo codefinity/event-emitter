@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class SynchronousListenerTests
 {

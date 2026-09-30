@@ -1,11 +1,11 @@
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
-using EventEmitter.Sample.Shipping;
-using EventEmitter.Testing;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Shipping;
+using Codefinity.EventEmitter.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace EventEmitter.Sample.Tests;
+namespace Codefinity.EventEmitter.Sample.Tests;
 
 /// <summary>
 /// Integration tests for the Orders, Inventory and Shipping modules, using EventEmitter.Testing.

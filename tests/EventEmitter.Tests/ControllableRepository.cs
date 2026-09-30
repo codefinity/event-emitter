@@ -1,4 +1,4 @@
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 /// <summary>
 /// An in-memory repository whose operations a test can make fail, or hold until released.

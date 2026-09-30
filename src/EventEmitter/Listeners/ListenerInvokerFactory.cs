@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace EventEmitter.Listeners;
+namespace Codefinity.EventEmitter.Listeners;
 
 /// <summary>
 /// Compiles a listener method into a <see cref="ListenerInvoker"/> once, so events are dispatched without reflection.

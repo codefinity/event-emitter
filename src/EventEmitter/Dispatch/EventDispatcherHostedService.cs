@@ -1,10 +1,10 @@
-using EventEmitter.Listeners;
+using Codefinity.EventEmitter.Listeners;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace EventEmitter.Dispatch;
+namespace Codefinity.EventEmitter.Dispatch;
 
 /// <summary>
 /// Runs <see cref="ApplicationModuleListenerAttribute"/> listeners on background workers, each in its own DI scope.

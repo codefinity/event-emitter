@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Keeps publications in process memory. Incomplete publications are lost when the process exits.

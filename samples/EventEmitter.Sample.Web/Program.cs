@@ -1,7 +1,7 @@
-using EventEmitter;
-using EventEmitter.Sample.Inventory;
-using EventEmitter.Sample.Orders;
-using EventEmitter.Sample.Shipping;
+using Codefinity.EventEmitter;
+using Codefinity.EventEmitter.Sample.Inventory;
+using Codefinity.EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Shipping;
 
 // The Orders, Inventory and Shipping modules behind a minimal API, plus admin endpoints for the
 // event publication registry. Try it with EventEmitter.Sample.Web.http.

@@ -1,4 +1,4 @@
-namespace EventEmitter;
+namespace Codefinity.EventEmitter;
 
 /// <summary>
 /// Storage for <see cref="EventPublication"/>s. The default is <see cref="InMemoryEventPublicationRepository"/>;

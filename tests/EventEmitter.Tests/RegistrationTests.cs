@@ -1,10 +1,10 @@
-using EventEmitter.Dispatch;
-using EventEmitter.Listeners;
+using Codefinity.EventEmitter.Dispatch;
+using Codefinity.EventEmitter.Listeners;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class RegistrationTests
 {

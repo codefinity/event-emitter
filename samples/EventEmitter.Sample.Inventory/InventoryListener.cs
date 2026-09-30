@@ -1,7 +1,7 @@
-using EventEmitter.Sample.Orders;
+using Codefinity.EventEmitter.Sample.Orders;
 using Microsoft.Extensions.Logging;
 
-namespace EventEmitter.Sample.Inventory;
+namespace Codefinity.EventEmitter.Sample.Inventory;
 
 // Internal: no other assembly can call it. It is reached only through Orders' events.
 internal sealed class InventoryListener(IEventPublisher events, ILogger<InventoryListener> logger)

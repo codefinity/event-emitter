@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace EventEmitter.Testing;
+namespace Codefinity.EventEmitter.Testing;
 
 /// <summary>
 /// Records every event published in the application, like Spring Modulith's <c>PublishedEvents</c>.

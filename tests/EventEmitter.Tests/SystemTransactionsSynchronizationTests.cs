@@ -1,6 +1,6 @@
 using System.Transactions;
 
-namespace EventEmitter.Tests;
+namespace Codefinity.EventEmitter.Tests;
 
 public class SystemTransactionsSynchronizationTests
 {

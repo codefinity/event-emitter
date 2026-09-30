@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
-namespace EventEmitter.Listeners;
+namespace Codefinity.EventEmitter.Listeners;
 
 internal sealed record MatchedListeners(ListenerDescriptor[] Synchronous, ListenerDescriptor[] ApplicationModule)
 {

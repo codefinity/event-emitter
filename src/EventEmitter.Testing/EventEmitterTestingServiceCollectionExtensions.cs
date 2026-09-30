@@ -1,4 +1,4 @@
-using EventEmitter.Testing;
+using Codefinity.EventEmitter.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection;

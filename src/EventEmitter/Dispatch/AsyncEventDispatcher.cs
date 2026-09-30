@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
-namespace EventEmitter.Dispatch;
+namespace Codefinity.EventEmitter.Dispatch;
 
 /// <summary>
 /// The queue between publishers and the background workers. A publication is reserved from the moment it is
