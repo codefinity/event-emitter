@@ -3,11 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Codefinity.EventEmitter.Listeners;
 
-internal sealed record MatchedListeners(ListenerDescriptor[] Synchronous, ListenerDescriptor[] ApplicationModule)
-{
-    public static readonly MatchedListeners None = new([], []);
-}
-
 /// <summary>
 /// All registered listener methods, looked up by the runtime type of a published event.
 /// </summary>
@@ -17,7 +12,7 @@ internal sealed class ListenerRegistry
     private readonly List<ListenerDescriptor> _descriptors = [];
     private readonly HashSet<Type> _listenerTypes = [];
     private readonly Dictionary<string, ListenerDescriptor> _byId = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<Type, MatchedListeners> _byEventType = new();
+    private readonly ConcurrentDictionary<Type, ListenerDescriptor[]> _byEventType = new();
 
     public IReadOnlyCollection<Type> ListenerTypes
     {
@@ -55,7 +50,7 @@ internal sealed class ListenerRegistry
         }
     }
 
-    public MatchedListeners GetListeners(Type eventType) => _byEventType.GetOrAdd(eventType, Match);
+    public ListenerDescriptor[] GetListeners(Type eventType) => _byEventType.GetOrAdd(eventType, Match);
 
     public bool TryGetById(string id, [NotNullWhen(true)] out ListenerDescriptor? descriptor)
     {
@@ -80,19 +75,11 @@ internal sealed class ListenerRegistry
         }
     }
 
-    private MatchedListeners Match(Type eventType)
+    private ListenerDescriptor[] Match(Type eventType)
     {
         lock (_gate)
         {
-            var matching = _descriptors.Where(d => d.EventType.IsAssignableFrom(eventType)).ToList();
-            if (matching.Count == 0)
-            {
-                return MatchedListeners.None;
-            }
-
-            return new MatchedListeners(
-                matching.Where(d => d.Mode == ListenerMode.Synchronous).OrderBy(d => d.Order).ToArray(),
-                matching.Where(d => d.Mode == ListenerMode.ApplicationModule).ToArray());
+            return _descriptors.Where(d => d.EventType.IsAssignableFrom(eventType)).ToArray();
         }
     }
 }

@@ -12,28 +12,28 @@ internal static class ListenerMethodsExample
 {
     private sealed class ListenerShapes(ILogger<ListenerShapes> logger)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void ReturnsVoid(OrderCompleted evt) =>
-            logger.LogInformation("sync    void ReturnsVoid(OrderCompleted)");
+            logger.LogInformation("void ReturnsVoid(OrderCompleted)");
 
-        [EventListener]
+        [ApplicationModuleListener]
         public Task ReturnsTask(OrderCompleted evt, CancellationToken cancellationToken)
         {
-            logger.LogInformation("sync    Task ReturnsTask(OrderCompleted, CancellationToken)");
+            logger.LogInformation("Task ReturnsTask(OrderCompleted, CancellationToken)");
             return Task.CompletedTask;
         }
 
-        [EventListener]
+        [ApplicationModuleListener]
         private ValueTask PrivateValueTask(OrderCompleted evt)
         {
-            logger.LogInformation("sync    private ValueTask PrivateValueTask(OrderCompleted)");
+            logger.LogInformation("private ValueTask PrivateValueTask(OrderCompleted)");
             return ValueTask.CompletedTask;
         }
 
-        [EventListener]
+        [ApplicationModuleListener]
         internal Task<int> ReturnsTaskOfT(OrderCompleted evt)
         {
-            logger.LogInformation("sync    internal Task<int> ReturnsTaskOfT(OrderCompleted); the result is ignored");
+            logger.LogInformation("internal Task<int> ReturnsTaskOfT(OrderCompleted); the result is ignored");
             return Task.FromResult(42);
         }
 
@@ -41,12 +41,12 @@ internal static class ListenerMethodsExample
         public async Task AsyncWithToken(OrderCompleted evt, CancellationToken cancellationToken)
         {
             await Task.Delay(50, cancellationToken);
-            logger.LogInformation("module  async Task AsyncWithToken(OrderCompleted, CancellationToken)");
+            logger.LogInformation("async Task AsyncWithToken(OrderCompleted, CancellationToken)");
         }
 
         [ApplicationModuleListener]
         private void AnotherEventType(OrderCancelled evt) =>
-            logger.LogInformation("module  private void AnotherEventType(OrderCancelled)");
+            logger.LogInformation("private void AnotherEventType(OrderCancelled)");
     }
 
     public static async Task RunAsync()
@@ -60,7 +60,7 @@ internal static class ListenerMethodsExample
         app.Say("Publishing OrderCancelled:");
         await app.PublishAsync(new OrderCancelled("order-2", "customer changed their mind"));
 
-        await app.WaitForCompletedAsync(2);
+        await app.WaitForCompletedAsync(6);
         app.Say("Six methods, six call styles, one class.");
     }
 }

@@ -61,16 +61,16 @@ public class RegistrationTests
     {
         public int Calls;
 
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(Ping evt) => Interlocked.Increment(ref Calls);
     }
 
     private class BaseListener(CallLog calls)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void FromBase(Ping evt) => calls.Record("base", evt);
 
-        [EventListener]
+        [ApplicationModuleListener]
         public virtual void Overridable(Ping evt) => calls.Record("base-virtual", evt);
     }
 
@@ -84,7 +84,7 @@ public class RegistrationTests
 
     private sealed class GenericListener<T>(CallLog calls)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(T evt) => calls.Record(typeof(T).Name, evt!);
     }
 
@@ -167,7 +167,8 @@ public class RegistrationTests
         await app.PublishAsync(new Ping(1));
         await app.PublishAsync(new Ping(2));
 
-        Assert.Equal(2, app.Services.GetRequiredService<SingletonListener>().Calls);
+        var listener = app.Services.GetRequiredService<SingletonListener>();
+        await Eventually.AssertAsync(() => Volatile.Read(ref listener.Calls) == 2, "both events reached the singleton");
     }
 
     [Fact]
@@ -177,6 +178,7 @@ public class RegistrationTests
 
         await app.PublishAsync(new Ping(1));
 
+        await Eventually.AssertAsync(() => app.Calls.All.Count == 2, "both methods ran");
         Assert.Equal(["base", "override"], app.Calls.Listeners.Order());
     }
 
@@ -188,7 +190,9 @@ public class RegistrationTests
         await app.PublishAsync(new Ping(1));
         await app.PublishAsync(new OrderCompleted(Guid.NewGuid()));
 
+        await Eventually.AssertAsync(() => app.Calls.All.Count == 1, "the Ping listener ran");
         Assert.Equal(["Ping"], app.Calls.Listeners);
+        Assert.Single(await app.Completed.FindAllAsync());
     }
 
     [Fact]

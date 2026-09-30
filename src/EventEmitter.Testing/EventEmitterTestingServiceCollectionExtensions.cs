@@ -1,3 +1,4 @@
+using Codefinity.EventEmitter;
 using Codefinity.EventEmitter.Testing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -13,11 +14,36 @@ public static class EventEmitterTestingServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Registered as a singleton first, so AddListener's scoped registration is skipped.
+        services.AddEventEmitter();
         services.TryAddSingleton<PublishedEvents>();
         services.TryAddSingleton<Scenario>();
-        services.AddEventEmitter().AddListener<PublishedEvents>();
+
+        var publisher = services.Last(d => d.ServiceType == typeof(IEventPublisher) && !d.IsKeyedService);
+        if (publisher.ImplementationFactory?.Target is not RecordingDecorator)
+        {
+            services.Remove(publisher);
+            services.Add(ServiceDescriptor.Describe(
+                typeof(IEventPublisher),
+                new RecordingDecorator(publisher).Create,
+                publisher.Lifetime));
+        }
 
         return services;
+    }
+
+    /// <summary>Builds the publisher that <paramref name="inner"/> describes and wraps it in a <see cref="RecordingEventPublisher"/>.</summary>
+    private sealed class RecordingDecorator(ServiceDescriptor inner)
+    {
+        public object Create(IServiceProvider services)
+        {
+            var publisher = inner switch
+            {
+                { ImplementationInstance: IEventPublisher instance } => instance,
+                { ImplementationFactory: { } factory } => (IEventPublisher)factory(services),
+                _ => (IEventPublisher)ActivatorUtilities.CreateInstance(services, inner.ImplementationType!),
+            };
+
+            return new RecordingEventPublisher(publisher, services.GetRequiredService<PublishedEvents>());
+        }
     }
 }

@@ -21,13 +21,10 @@ public class DispatcherRobustnessTests
         }
     }
 
-    private sealed class CountingListeners(CallLog calls)
+    private sealed class CountingListener(CallLog calls)
     {
-        [EventListener]
-        public void Inline(Ping evt) => calls.Record("inline", evt);
-
         [ApplicationModuleListener]
-        public void Background(Ping evt) => calls.Record("background", evt);
+        public void On(Ping evt) => calls.Record("background", evt);
     }
 
     private sealed class Gate
@@ -67,9 +64,6 @@ public class DispatcherRobustnessTests
 
     private sealed class InventoryListener(CallLog calls)
     {
-        [EventListener]
-        public void Inline(Ping evt) => calls.Record("inline", evt);
-
         [ApplicationModuleListener(Id = "inventory")]
         public void Background(Ping evt) => calls.Record("background", evt);
     }
@@ -101,7 +95,7 @@ public class DispatcherRobustnessTests
         const int total = publishers * eventsPerPublisher;
 
         await using var app = await TestApp.StartAsync(
-            b => b.AddListener<CountingListeners>(),
+            b => b.AddListener<CountingListener>(),
             o => o.MaxDegreeOfParallelism = 8);
 
         await Task.WhenAll(Enumerable.Range(0, publishers).Select(p => Task.Run(async () =>
@@ -114,12 +108,9 @@ public class DispatcherRobustnessTests
 
         await Eventually.AssertAsync(async () => (await app.Completed.FindAllAsync()).Count == total, "every publication completed");
 
-        foreach (var listener in new[] { "inline", "background" })
-        {
-            var numbers = app.Calls.All.Where(c => c.Listener == listener).Select(c => ((Ping)c.Event).N).ToList();
-            Assert.Equal(total, numbers.Count);
-            Assert.Equal(total, numbers.Distinct().Count());
-        }
+        var numbers = app.Calls.All.Select(c => ((Ping)c.Event).N).ToList();
+        Assert.Equal(total, numbers.Count);
+        Assert.Equal(total, numbers.Distinct().Count());
 
         Assert.Empty(await app.Incomplete.FindAllAsync());
         Assert.All(await app.Completed.FindAllAsync(), p => Assert.Equal(1, p.Attempts));
@@ -256,7 +247,7 @@ public class DispatcherRobustnessTests
         await repository.CreateAsync([new EventPublication(Guid.NewGuid(), new Ping(1), typeof(Ping), "no-such-listener", DateTimeOffset.UtcNow)]);
 
         await using var app = await TestApp.StartAsync(
-            b => b.AddListener<CountingListeners>().UsePublicationRepository(repository),
+            b => b.AddListener<CountingListener>().UsePublicationRepository(repository),
             o => o.RepublishOutstandingEventsOnStartup = true);
 
         await Eventually.AssertAsync(
@@ -276,9 +267,9 @@ public class DispatcherRobustnessTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => app.PublishAsync(new Ping(1)));
         Assert.Contains("create", ex.Message);
 
-        // The synchronous listener ran before the failure; the module listener never will.
+        // No publication was stored, so the listener never runs.
         await Task.Delay(100);
-        Assert.Equal(["inline"], app.Calls.Listeners);
+        Assert.Empty(app.Calls.All);
 
         repository.FailCreate = false;
         await app.PublishAsync(new Ping(2));
@@ -325,7 +316,7 @@ public class DispatcherRobustnessTests
     public async Task Invalid_options_stop_the_host_from_starting(int parallelism, int shutdownSeconds)
     {
         var ex = await Assert.ThrowsAsync<OptionsValidationException>(() => TestApp.StartAsync(
-            b => b.AddListener<CountingListeners>(),
+            b => b.AddListener<CountingListener>(),
             o =>
             {
                 o.MaxDegreeOfParallelism = parallelism;

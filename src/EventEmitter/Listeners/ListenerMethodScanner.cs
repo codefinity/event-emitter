@@ -3,8 +3,7 @@ using System.Reflection;
 namespace Codefinity.EventEmitter.Listeners;
 
 /// <summary>
-/// Finds and validates the methods marked with <see cref="EventListenerAttribute"/> or
-/// <see cref="ApplicationModuleListenerAttribute"/> on a listener type.
+/// Finds and validates the methods marked with <see cref="ApplicationModuleListenerAttribute"/> on a listener type.
 /// </summary>
 internal static class ListenerMethodScanner
 {
@@ -12,9 +11,7 @@ internal static class ListenerMethodScanner
         BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
     public static bool HasListenerMethods(Type type) =>
-        type.GetMethods(AllMethods).Any(m =>
-            m.IsDefined(typeof(EventListenerAttribute), inherit: true) ||
-            m.IsDefined(typeof(ApplicationModuleListenerAttribute), inherit: true));
+        type.GetMethods(AllMethods).Any(m => m.IsDefined(typeof(ApplicationModuleListenerAttribute), inherit: true));
 
     public static IReadOnlyList<ListenerDescriptor> Scan(Type listenerType)
     {
@@ -28,48 +25,35 @@ internal static class ListenerMethodScanner
 
         foreach (var method in listenerType.GetMethods(AllMethods))
         {
-            var synchronous = method.GetCustomAttribute<EventListenerAttribute>(inherit: true);
-            var module = method.GetCustomAttribute<ApplicationModuleListenerAttribute>(inherit: true);
-            if (synchronous is null && module is null)
+            var attribute = method.GetCustomAttribute<ApplicationModuleListenerAttribute>(inherit: true);
+            if (attribute is null)
             {
                 continue;
             }
 
-            var eventType = Validate(listenerType, method, synchronous, module);
-            var mode = module is null ? ListenerMode.Synchronous : ListenerMode.ApplicationModule;
-            var id = synchronous?.Id ?? module?.Id ?? $"{listenerType.FullName}.{method.Name}({eventType.FullName})";
+            var eventType = Validate(listenerType, method);
+            var id = attribute.Id ?? $"{listenerType.FullName}.{method.Name}({eventType.FullName})";
 
             descriptors.Add(new ListenerDescriptor(
                 listenerType,
                 method,
                 eventType,
-                mode,
                 id,
-                synchronous?.Order ?? 0,
                 ListenerInvokerFactory.Create(method)));
         }
 
         if (descriptors.Count == 0)
         {
             throw new InvalidOperationException(
-                $"Listener type '{listenerType.FullName}' has no methods marked with [EventListener] or [ApplicationModuleListener].");
+                $"Listener type '{listenerType.FullName}' has no methods marked with [ApplicationModuleListener].");
         }
 
         return descriptors;
     }
 
-    private static Type Validate(
-        Type listenerType,
-        MethodInfo method,
-        EventListenerAttribute? synchronous,
-        ApplicationModuleListenerAttribute? module)
+    private static Type Validate(Type listenerType, MethodInfo method)
     {
         var name = $"{listenerType.FullName}.{method.Name}";
-
-        if (synchronous is not null && module is not null)
-        {
-            throw Invalid(name, "is marked with both [EventListener] and [ApplicationModuleListener]; use one.");
-        }
 
         if (method.IsStatic)
         {

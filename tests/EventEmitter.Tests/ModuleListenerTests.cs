@@ -40,10 +40,10 @@ public class ModuleListenerTests
         [ApplicationModuleListener]
         public void OnAnyOrderEvent(IOrderEvent evt) => calls.Record("interface", evt);
 
-        [EventListener]
+        [ApplicationModuleListener]
         public void OnBaseRecord(OrderEvent evt) => calls.Record("base", evt);
 
-        [EventListener]
+        [ApplicationModuleListener]
         public void OnCancelledOnly(OrderCancelled evt) => calls.Record("cancelled-only", evt);
     }
 

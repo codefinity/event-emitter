@@ -9,7 +9,6 @@ In-process application events for .NET, modeled on [Spring Modulith](https://doc
 
 One part of your application publishes a plain event object. Other parts (often other modules or assemblies) react to it without either side referencing the other's services. Listeners are ordinary methods marked with an attribute; there are no listener interfaces or base classes to implement.
 
-- **Synchronous listeners** (`[EventListener]`) run inline, in the publisher's DI scope and transaction.
 - **Module listeners** (`[ApplicationModuleListener]`) run in the background, in their own DI scope, and only after the publisher's transaction commits.
 - **Event publication registry**: every delivery to a module listener is tracked, so failed deliveries can be inspected and resubmitted.
 - **Test helpers**: `PublishedEvents` and `Scenario` for asserting on events in integration tests.
@@ -168,34 +167,22 @@ app.MapPost("/orders/{orderId}/complete", async (string orderId, string customer
 app.Run();
 ```
 
-`IEventPublisher` is scoped, so each request gets its own publisher. Synchronous listeners share that request's scope.
+`IEventPublisher` is scoped, so each request gets its own publisher. Listeners never run in the request's scope; each delivery gets a new one.
 
 ## Writing listeners
 
-### Synchronous vs. module listeners
+### How listeners run
 
-| | `[EventListener]` | `[ApplicationModuleListener]` |
-|---|---|---|
-| Spring equivalent | `@EventListener` | `@ApplicationModuleListener` |
-| Runs | Inline, before `PublishAsync` returns | On a background worker |
-| DI scope | The publisher's scope | A new scope per delivery |
-| Transaction | Inside the publisher's transaction | After it commits; skipped on rollback |
-| Exceptions | Thrown from `PublishAsync` | Logged and recorded; the publication stays incomplete |
-| Tracked in the registry | No | Yes |
+Every listener is marked with `[ApplicationModuleListener]`, the counterpart of Spring Modulith's `@ApplicationModuleListener`. A listener:
 
-Use `[EventListener]` when the reaction must succeed or fail together with the publisher's work, such as validation, audit rows in the same transaction, or updating a read model in the same unit of work. Use `[ApplicationModuleListener]` for everything else, especially work in another module, which shouldn't be able to slow down or break the publisher.
+- **Runs on a background worker**, after `PublishAsync` has returned.
+- **Gets a new DI scope** for each delivery.
+- **Waits for the publisher's transaction** to commit, and never runs if it rolls back (see [Transactions](#transactions)).
+- **Can't fail the publisher.** Its exceptions are logged and recorded, and the publication stays incomplete until you resubmit it.
+- **Is tracked** in the publication registry, one publication per listener and event.
+- **Has no order** relative to other listeners. Deliveries run concurrently, up to `MaxDegreeOfParallelism`.
 
-```csharp
-// samples/EventEmitter.Sample/Audit/AuditListener.cs
-public sealed class AuditListener(ILogger<AuditListener> logger)
-{
-    // Synchronous: runs inside OrderService's transaction, before PublishAsync returns.
-    // IOrderEvent is an interface, so this receives OrderCompleted and OrderCancelled.
-    [EventListener]
-    public void On(IOrderEvent evt) =>
-        logger.LogInformation("Audited {Event} for {OrderId}", evt.GetType().Name, evt.OrderId);
-}
-```
+Because a listener can't stop or slow down the publisher, work that must succeed or fail together with the publisher's, such as validation or an audit row in the same transaction, belongs in the publisher itself.
 
 ### Method signatures
 
@@ -212,28 +199,28 @@ All of these are valid:
 // samples/EventEmitter.Sample/Examples/ListenerMethodsExample.cs
 private sealed class ListenerShapes(ILogger<ListenerShapes> logger)
 {
-    [EventListener]
+    [ApplicationModuleListener]
     public void ReturnsVoid(OrderCompleted evt) =>
-        logger.LogInformation("sync    void ReturnsVoid(OrderCompleted)");
+        logger.LogInformation("void ReturnsVoid(OrderCompleted)");
 
-    [EventListener]
+    [ApplicationModuleListener]
     public Task ReturnsTask(OrderCompleted evt, CancellationToken cancellationToken)
     {
-        logger.LogInformation("sync    Task ReturnsTask(OrderCompleted, CancellationToken)");
+        logger.LogInformation("Task ReturnsTask(OrderCompleted, CancellationToken)");
         return Task.CompletedTask;
     }
 
-    [EventListener]
+    [ApplicationModuleListener]
     private ValueTask PrivateValueTask(OrderCompleted evt)
     {
-        logger.LogInformation("sync    private ValueTask PrivateValueTask(OrderCompleted)");
+        logger.LogInformation("private ValueTask PrivateValueTask(OrderCompleted)");
         return ValueTask.CompletedTask;
     }
 
-    [EventListener]
+    [ApplicationModuleListener]
     internal Task<int> ReturnsTaskOfT(OrderCompleted evt)
     {
-        logger.LogInformation("sync    internal Task<int> ReturnsTaskOfT(OrderCompleted); the result is ignored");
+        logger.LogInformation("internal Task<int> ReturnsTaskOfT(OrderCompleted); the result is ignored");
         return Task.FromResult(42);
     }
 
@@ -241,18 +228,18 @@ private sealed class ListenerShapes(ILogger<ListenerShapes> logger)
     public async Task AsyncWithToken(OrderCompleted evt, CancellationToken cancellationToken)
     {
         await Task.Delay(50, cancellationToken);
-        logger.LogInformation("module  async Task AsyncWithToken(OrderCompleted, CancellationToken)");
+        logger.LogInformation("async Task AsyncWithToken(OrderCompleted, CancellationToken)");
     }
 
     [ApplicationModuleListener]
     private void AnotherEventType(OrderCancelled evt) =>
-        logger.LogInformation("module  private void AnotherEventType(OrderCancelled)");
+        logger.LogInformation("private void AnotherEventType(OrderCancelled)");
 }
 ```
 
 Run it with `dotnet run --project samples/EventEmitter.Sample -- listener-methods`.
 
-For synchronous listeners, the token is the one passed to `PublishAsync`. For module listeners, it's cancelled only if the host's shutdown timeout runs out while the listener is still running (see [Configuration](#configuration)).
+The token is cancelled only if the host's shutdown timeout runs out while the listener is still running (see [Configuration](#configuration)). The token passed to `PublishAsync` only covers storing the publications.
 
 ### Receiving a family of events
 
@@ -281,17 +268,17 @@ private sealed class OrderTimeline(ILogger<OrderTimeline> logger)
 
 private sealed class EverythingListener(ILogger<EverythingListener> logger)
 {
-    [EventListener]
+    [ApplicationModuleListener]
     public void On(object evt) =>
         logger.LogInformation("object listener got {Event}", evt.GetType().Name);
 }
 ```
 
-`OrderTimeline` receives `OrderCompleted` and `OrderCancelled`. A parameter of type `object` receives every event, which is also how the test helper `PublishedEvents` works. Run it with `dotnet run --project samples/EventEmitter.Sample -- supertypes`.
+`OrderTimeline` receives `OrderCompleted` and `OrderCancelled`. A parameter of type `object` receives every event. Run it with `dotnet run --project samples/EventEmitter.Sample -- supertypes`.
 
 ### Several listeners in one class
 
-A class can hold any number of listener methods, for different events and in both modes. Inventory's listener handles both of Orders' events:
+A class can hold any number of listener methods, for different events. Inventory's listener handles both of Orders' events:
 
 ```csharp
 // samples/EventEmitter.Sample.Inventory/InventoryListener.cs
@@ -314,27 +301,6 @@ internal sealed class InventoryListener(IEventPublisher events, ILogger<Inventor
         logger.LogInformation("Released stock for {OrderId}", evt.OrderId);
 }
 ```
-
-### Ordering synchronous listeners
-
-Synchronous listeners for the same event run in ascending `Order` (default `0`). Listeners with the same order run in registration order.
-
-```csharp
-// samples/EventEmitter.Sample/Examples/OrderingExample.cs (trimmed)
-private sealed class CheckoutSteps(ILogger<CheckoutSteps> logger)
-{
-    [EventListener(Order = 30)]
-    public void Audit(OrderCompleted evt) => logger.LogInformation("3. Audit     (Order = 30)");
-
-    [EventListener]
-    public void Invoice(OrderCompleted evt) => logger.LogInformation("2. Invoice   (Order = 0, the default)");
-
-    [EventListener(Order = -10)]
-    public void Validate(OrderCompleted evt) => logger.LogInformation("1. Validate  (Order = -10)");
-}
-```
-
-They run Validate, Invoice, Audit. Module listeners run concurrently, so they have no order.
 
 ### Listener ids
 
@@ -366,7 +332,7 @@ Listener methods are checked when you register them. Mistakes fail immediately w
 ```csharp
 private sealed class ExtraParameter
 {
-    [EventListener]
+    [ApplicationModuleListener]
     public void On(OrderCompleted evt, string note) { }
 }
 ```
@@ -383,7 +349,6 @@ These are rejected:
 - An event passed by `ref`, `in` or `out`.
 - A return type other than `void`, `Task`, `Task<T>` or `ValueTask`.
 - Static or generic methods.
-- A method with both attributes.
 - A duplicate listener id.
 - A registered class with no listener methods, or an abstract or open generic class.
 
@@ -396,8 +361,8 @@ These are rejected:
 ```csharp
 builder.Services
     .AddEventEmitter(options => { /* see Configuration */ })
-    .AddListener<AuditListener>()                                   // one class
-    .AddListener(typeof(AuditListener))                             // same, non-generic
+    .AddListener<MyListener>()                                      // one class
+    .AddListener(typeof(MyListener))                                // same, non-generic
     .AddListenersFromAssembly(typeof(InventoryModule).Assembly)     // every class with listener methods
     .AddListenersFromAssemblyContaining<ShippingModule>();          // same, by a type in the assembly
 ```
@@ -459,17 +424,17 @@ public static IServiceCollection AddShippingModule(this IServiceCollection servi
 }
 ```
 
-**The host only composes them**, and can add listeners of its own:
+**The host only composes them:**
 
 ```csharp
 // samples/EventEmitter.Sample/Examples/ModulesExample.cs (trimmed)
 await using var app = await ExampleApp.StartAsync(services => services
     .AddOrdersModule()       // EventEmitter.Sample.Orders.dll
     .AddInventoryModule()    // EventEmitter.Sample.Inventory.dll
-    .AddShippingModule()     // EventEmitter.Sample.Shipping.dll
-    .AddEventEmitter()
-    .AddListener<AuditListener>());
+    .AddShippingModule());   // EventEmitter.Sample.Shipping.dll
 ```
+
+A host can add listeners of its own with `AddEventEmitter().AddListener<T>()`.
 
 The resulting project references:
 
@@ -588,7 +553,7 @@ EventEmitter matches listeners by CLR type, so a listener needs the event's type
 | Type | Project | Why |
 |---|---|---|
 | `OrderCompleted`, `OrderCancelled` | `Orders.Events` | Other modules listen for them |
-| `IOrderEvent` | `Orders.Events` | Listeners use it to receive every order event (see `AuditListener`) |
+| `IOrderEvent` | `Orders.Events` | Listeners use it to receive every order event (see `OrderTimeline` in the `supertypes` example) |
 | `OrderService` | `Orders` | Behaviour; only the host calls it |
 | `OrdersModule.AddOrdersModule` | `Orders` | Registration; only the host calls it |
 | A listener class, such as `InventoryListener` | The module that owns it, `internal` | Reached only through events |
@@ -631,27 +596,25 @@ public async Task CompleteAsync(string orderId, string customerId, bool failBefo
 }
 ```
 
-When `PublishAsync` returns, `AuditListener` (an `[EventListener]`) has already run inside the transaction, but `InventoryListener` (an `[ApplicationModuleListener]`) hasn't. When `transaction` is disposed at the end of the method, the transaction commits and Inventory's delivery is queued. With `failBeforeCommit: true`, the exception skips `Complete()`, the transaction rolls back, and Inventory never hears about the order. The `transactions` example runs both cases:
+When `PublishAsync` returns, `InventoryListener` hasn't run: its publication is stored and waits for the transaction. When `transaction` is disposed at the end of the method, the transaction commits and Inventory's delivery is queued. With `failBeforeCommit: true`, the exception skips `Complete()`, the transaction rolls back, and Inventory never hears about the order. The `transactions` example runs both cases:
 
 ```
   [thread  9] OrderService         Completing order-1 for alice
-  [thread  9] AuditListener        Audited OrderCompleted for order-1
   [thread  9] OrderService         Committed order-1
   [thread  9] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
   [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory.Events)
   ...
   [thread 14] OrderService         Completing order-2 for bob
-  [thread 14] AuditListener        Audited OrderCompleted for order-2
   [thread 14] Example              Caught: Payment for order-2 was declined.
   [thread 14] Example                shipment for order-2: none
   [thread 14] Example                publications left waiting: 0 (the rollback deleted them)
 ```
 
-| What happens | `[EventListener]` | `[ApplicationModuleListener]` |
-|---|---|---|
-| No ambient transaction | Runs inline | Queued immediately |
-| Transaction commits | Already ran inline | Queued at commit |
-| Transaction rolls back (no `Complete()`, or an exception) | Already ran inline | Never runs; its publications are deleted |
+| What happens | Listener |
+|---|---|
+| No ambient transaction | Queued immediately |
+| Transaction commits | Queued at commit |
+| Transaction rolls back (no `Complete()`, or an exception) | Never runs; its publications are deleted |
 
 > **Always pass `TransactionScopeAsyncFlowOption.Enabled`.** Without it the transaction doesn't flow across `await`, the publisher sees no transaction, and module listeners run before your data is committed.
 
@@ -1154,7 +1117,7 @@ public async Task A_rolled_back_order_reaches_no_other_module()
 - `All` returns every recorded event.
 - `Clear()` resets the recording.
 
-Events are recorded even when a synchronous listener throws, because the recorder runs first.
+Events are recorded before they're published, so they show up even when `PublishAsync` fails, for example because the repository can't store the publications.
 
 ### Testing failure handling
 
@@ -1193,9 +1156,9 @@ To test time-based behaviour such as `ResubmitOlderThanAsync` or `DeletePublicat
 
 ## Things to know
 
-- **A failing synchronous listener stops the publish.** If an `[EventListener]` throws, the exception comes out of `PublishAsync` and no module-listener publications are created for that event. Usually your transaction then rolls back as well.
+- **Listeners can't veto a publish.** Nothing a listener does makes `PublishAsync` throw. It fails only on its own errors, such as a `null` event or a repository that can't store the publications. Checks that must stop the operation belong in the publisher.
 - **Module listeners need a running host.** Their events are queued in memory and delivered by a hosted service. In a bare `ServiceProvider` without a host, they're queued but never delivered.
-- **Resolve `IEventPublisher` from a scope.** It's scoped, and synchronous listeners are resolved from the same scope. Inject it into scoped or transient services, or create a scope in singletons and background services.
+- **Resolve `IEventPublisher` from a scope.** It's scoped. Inject it into scoped or transient services, or create a scope in singletons and background services.
 - **Events are shared by reference.** In memory, every listener receives the same object instance, so keep events immutable.
 - **No automatic retries.** Failed deliveries wait for you to resubmit them, as in the [retry job example](#inspecting-and-resubmitting).
 - **In-memory by default.** Without a durable repository, publications that are incomplete when the process stops are lost.
@@ -1206,9 +1169,8 @@ To test time-based behaviour such as `ResubmitOlderThanAsync` or `DeletePublicat
 | Spring Modulith | EventEmitter |
 |---|---|
 | `ApplicationEventPublisher.publishEvent(e)` | `IEventPublisher.PublishAsync(e)` |
-| `@EventListener` | `[EventListener]` |
 | `@ApplicationModuleListener` | `[ApplicationModuleListener]` |
-| `@Order` | `[EventListener(Order = n)]` |
+| `@EventListener`, `@Order` | Not supported; every listener runs in the background after commit |
 | `@Transactional` | `TransactionScope` with `TransactionScopeAsyncFlowOption.Enabled` |
 | `@EnableAsync` + task executor | Built in; see `MaxDegreeOfParallelism` |
 | Event Publication Registry | `IEventPublicationRepository` (in memory by default) |
@@ -1242,7 +1204,7 @@ The first build restores NuGet packages, so it needs internet access. It should 
 ### 3. Run the console examples
 
 ```shell
-dotnet run --project samples/EventEmitter.Sample                           # all 13 examples, about 10 seconds
+dotnet run --project samples/EventEmitter.Sample                           # all 11 examples, about 10 seconds
 dotnet run --project samples/EventEmitter.Sample -- --list                 # names and descriptions
 dotnet run --project samples/EventEmitter.Sample -- resubmit               # one example
 dotnet run --project samples/EventEmitter.Sample -- modules transactions   # several, in list order
@@ -1254,11 +1216,11 @@ The `--` separates `dotnet run`'s own options from the example names. See [Examp
 
 ```
   [thread  2] OrderService         Completing order-1 for alice
-  [thread  2] AuditListener        Audited OrderCompleted for order-1
+  [thread  2] OrderService         Committed order-1
   [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
 ```
 
-- **`[thread N]`** is the thread that wrote the line. A listener on the publisher's thread ran inline (`[EventListener]`). A listener on another thread ran on a background worker (`[ApplicationModuleListener]`).
+- **`[thread N]`** is the thread that wrote the line. Listeners run on background workers from the thread pool, so a listener can show the same number as a thread the publisher used earlier.
 - **The second column** is the class that logged: `Example` lines are the example's narration, and `EventEmitter` lines come from the library itself.
 - **`ERROR` lines are expected** in `resubmit`, `retry-job` and `durable-storage`. Those examples make listeners fail on purpose, to show how failures are recorded and resubmitted.
 
@@ -1333,7 +1295,7 @@ Everything in this README can be run; see [Running the samples](#running-the-sam
 
 ### Console examples
 
-[samples/EventEmitter.Sample/Examples/](samples/EventEmitter.Sample/Examples/) has one runnable example per capability. Each starts its own host and narrates what happens. Every log line shows the thread it came from, so you can see which listeners ran inline and which ran on background workers.
+[samples/EventEmitter.Sample/Examples/](samples/EventEmitter.Sample/Examples/) has one runnable example per capability. Each starts its own host and narrates what happens. Every log line shows the thread it came from.
 
 ```shell
 dotnet run --project samples/EventEmitter.Sample                  # all examples
@@ -1343,12 +1305,10 @@ dotnet run --project samples/EventEmitter.Sample -- --list        # the names
 
 | Name | Shows | Source |
 |---|---|---|
-| `modules` | An event travelling Orders → Inventory → Shipping across three assemblies; inline vs. background listeners | [ModulesExample.cs](samples/EventEmitter.Sample/Examples/ModulesExample.cs) |
+| `modules` | An event travelling Orders → Inventory → Shipping across three assemblies | [ModulesExample.cs](samples/EventEmitter.Sample/Examples/ModulesExample.cs) |
 | `transactions` | Module listeners run after commit; after a rollback they never run and their publications are deleted | [TransactionsExample.cs](samples/EventEmitter.Sample/Examples/TransactionsExample.cs) |
 | `listener-methods` | Every supported method shape: `void`/`Task`/`Task<T>`/`ValueTask`, `CancellationToken`, private and internal methods, several events in one class | [ListenerMethodsExample.cs](samples/EventEmitter.Sample/Examples/ListenerMethodsExample.cs) |
 | `supertypes` | Listening for an interface, a single type, or `object` | [SupertypesExample.cs](samples/EventEmitter.Sample/Examples/SupertypesExample.cs) |
-| `ordering` | `[EventListener(Order = n)]` | [OrderingExample.cs](samples/EventEmitter.Sample/Examples/OrderingExample.cs) |
-| `sync-failure` | A throwing synchronous listener fails the publish, and module listeners never see the event | [SynchronousFailureExample.cs](samples/EventEmitter.Sample/Examples/SynchronousFailureExample.cs) |
 | `resubmit` | A failed listener leaves an incomplete publication; `FindAllAsync`, `ResubmitOlderThanAsync`, `ResubmitAsync` by listener id; a custom `TimeProvider` | [ResubmitExample.cs](samples/EventEmitter.Sample/Examples/ResubmitExample.cs) |
 | `retry-job` | Automatic retries: a `BackgroundService` that resubmits failures and gives up after 3 attempts | [RetryJobExample.cs](samples/EventEmitter.Sample/Examples/RetryJobExample.cs) |
 | `completion-modes` | `CompletionMode.Update` with `DeletePublicationsOlderThanAsync`, and `CompletionMode.Delete` | [CompletionModesExample.cs](samples/EventEmitter.Sample/Examples/CompletionModesExample.cs) |
@@ -1362,7 +1322,6 @@ Part of the `modules` output:
 ```
 === modules: Events across assemblies: Orders -> Inventory -> Shipping ===
   [thread  2] OrderService         Completing order-1 for alice
-  [thread  2] AuditListener        Audited OrderCompleted for order-1
   [thread  2] OrderService         Committed order-1
   [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
   [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory.Events)

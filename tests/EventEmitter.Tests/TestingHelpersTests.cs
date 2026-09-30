@@ -7,10 +7,10 @@ namespace Codefinity.EventEmitter.Tests;
 
 public class TestingHelpersTests
 {
-    private sealed class ThrowingListener
+    private sealed class PingListener
     {
-        [EventListener]
-        public void On(Ping evt) => throw new InvalidOperationException("listener failed");
+        [ApplicationModuleListener]
+        public void On(Ping evt) { }
     }
 
     private sealed class EchoListener(IEventPublisher events)
@@ -54,9 +54,10 @@ public class TestingHelpersTests
     }
 
     [Fact]
-    public async Task PublishedEvents_records_events_even_when_a_listener_throws()
+    public async Task PublishedEvents_records_events_even_when_publishing_fails()
     {
-        await using var app = await StartAsync(b => b.AddListener<ThrowingListener>());
+        var repository = new ControllableRepository { FailCreate = true };
+        await using var app = await StartAsync(b => b.AddListener<PingListener>().UsePublicationRepository(repository));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => app.PublishAsync(new Ping(1)));
 
@@ -95,6 +96,20 @@ public class TestingHelpersTests
         await app.PublishAsync(new Ping(1));
 
         Assert.Single(app.Services.GetRequiredService<PublishedEvents>().All);
+    }
+
+    [Fact]
+    public async Task The_testing_helpers_can_be_registered_after_AddEventEmitter()
+    {
+        var services = new ServiceCollection().AddLogging();
+        services.AddEventEmitter();
+        services.AddEventEmitterTesting();
+        await using var provider = services.BuildServiceProvider(validateScopes: true);
+        await using var scope = provider.CreateAsyncScope();
+
+        await scope.ServiceProvider.GetRequiredService<IEventPublisher>().PublishAsync(new Ping(1));
+
+        Assert.Equal(new Ping(1), Assert.Single(provider.GetRequiredService<PublishedEvents>().All));
     }
 
     [Fact]

@@ -1,4 +1,3 @@
-using Codefinity.EventEmitter.Sample.Audit;
 using Codefinity.EventEmitter.Sample.Infrastructure;
 using Codefinity.EventEmitter.Sample.Inventory;
 using Codefinity.EventEmitter.Sample.Orders;
@@ -8,8 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Codefinity.EventEmitter.Sample.Examples;
 
 /// <summary>
-/// OrderService publishes inside a TransactionScope. Module listeners run only if it commits;
-/// synchronous listeners run inside it either way.
+/// OrderService publishes inside a TransactionScope. Module listeners run only if it commits.
 /// </summary>
 internal static class TransactionsExample
 {
@@ -18,9 +16,7 @@ internal static class TransactionsExample
         await using var app = await ExampleApp.StartAsync(services => services
             .AddOrdersModule()
             .AddInventoryModule()
-            .AddShippingModule()
-            .AddEventEmitter()
-            .AddListener<AuditListener>());
+            .AddShippingModule());
 
         var carrier = app.Get<CarrierGateway>();
 
@@ -42,7 +38,7 @@ internal static class TransactionsExample
         await Task.Delay(300);
         var incomplete = await app.Get<IIncompleteEventPublications>().FindAllAsync();
 
-        app.Say("The audit ran inside the transaction, but Inventory and Shipping never heard about order-2:");
+        app.Say("Inventory and Shipping never heard about order-2:");
         app.Say($"  shipment for order-2: {(carrier.Shipments.ContainsKey("order-2") ? "yes" : "none")}");
         app.Say($"  publications left waiting: {incomplete.Count} (the rollback deleted them)");
     }

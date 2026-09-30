@@ -44,9 +44,8 @@ public sealed class PublishedEvents
         }
     }
 
-    // Runs before every other synchronous listener, so events are recorded even if a listener throws.
-    [EventListener(Id = "EventEmitter.Testing.PublishedEvents", Order = int.MinValue)]
-    private void Record(object evt)
+    /// <summary>Called by <see cref="RecordingEventPublisher"/> for every event, before it is published.</summary>
+    internal void Record(object evt)
     {
         List<Waiter> matched;
         lock (_gate)

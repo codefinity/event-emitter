@@ -40,7 +40,7 @@
       "id": "example",
       "type": "pickString",
       "description": "Example to run",
-      "options": ["modules", "transactions", "listener-methods", "supertypes", "ordering", "sync-failure", "resubmit", "retry-job", "completion-modes", "durable-storage", "unit-of-work", "parallelism", "validation"],
+      "options": ["modules", "transactions", "listener-methods", "supertypes", "resubmit", "retry-job", "completion-modes", "durable-storage", "unit-of-work", "parallelism", "validation"],
       "default": "modules"
     }
   ]
