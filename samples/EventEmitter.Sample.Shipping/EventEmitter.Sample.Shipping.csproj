@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\EventEmitter\EventEmitter.csproj" />
-    <!-- Only for the StockReserved event type. Inventory has no reference back to Shipping. -->
-    <ProjectReference Include="..\EventEmitter.Sample.Inventory\EventEmitter.Sample.Inventory.csproj" />
+    <!-- Inventory's event types only; no reference to the Inventory module itself. -->
+    <ProjectReference Include="..\EventEmitter.Sample.Inventory.Events\EventEmitter.Sample.Inventory.Events.csproj" />
   </ItemGroup>
 
 </Project>

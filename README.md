@@ -60,10 +60,10 @@ The code in this README comes from the samples in [samples/](samples/): a small 
 
 ### 1. Define an event
 
-An event is any object. Immutable records work best.
+An event is any object. Immutable records work best. The samples keep each module's public events in a separate `*.Events` project, so other modules can listen for them without referencing the module (see [Modules in separate assemblies](#modules-in-separate-assemblies)).
 
 ```csharp
-// samples/EventEmitter.Sample.Orders/OrderEvents.cs (trimmed)
+// samples/EventEmitter.Sample.Orders.Events/OrderEvents.cs (trimmed)
 namespace Codefinity.EventEmitter.Sample.Orders;
 
 public sealed record OrderCompleted(string OrderId, string CustomerId) : IOrderEvent;
@@ -259,7 +259,7 @@ For synchronous listeners, the token is the one passed to `PublishAsync`. For mo
 Because matching uses the parameter's type, a listener for a base type or interface receives every subtype:
 
 ```csharp
-// samples/EventEmitter.Sample.Orders/OrderEvents.cs
+// samples/EventEmitter.Sample.Orders.Events/OrderEvents.cs
 public interface IOrderEvent
 {
     string OrderId { get; }
@@ -411,28 +411,31 @@ Assembly scanning finds `internal` listeners too, which is how the sample module
 
 ## Modules in separate assemblies
 
-The samples in [samples/](samples/) split a small shop into three module assemblies. Events are the only thing they share:
+The samples in [samples/](samples/) split a small shop into three module assemblies. Events are the only thing they share, and each module's events live in a separate events assembly:
 
 ```
-EventEmitter.Sample.Orders.dll      publishes OrderCompleted and OrderCancelled; knows nothing about the others
-EventEmitter.Sample.Inventory.dll   listens for Orders' events; publishes StockReserved
-EventEmitter.Sample.Shipping.dll    listens for StockReserved
-EventEmitter.Sample.exe / .Web.dll  hosts: wire the modules together
+EventEmitter.Sample.Orders.Events.dll         OrderCompleted, OrderCancelled (plain records, no dependencies)
+EventEmitter.Sample.Inventory.Events.dll      StockReserved (plain record, no dependencies)
+EventEmitter.Sample.Orders.dll                publishes OrderCompleted and OrderCancelled; knows nothing about the others
+EventEmitter.Sample.Inventory.dll             listens for Orders' events; publishes StockReserved
+EventEmitter.Sample.Shipping.dll              listens for StockReserved
+EventEmitter.Sample.exe / .Web.dll            hosts: wire the modules together
 ```
 
-**Project references go one way.** A module references another only to see its event types:
+**Modules never reference each other.** A module references only events assemblies, so it can see another module's event types but not its code:
 
 ```xml
 <!-- samples/EventEmitter.Sample.Inventory/EventEmitter.Sample.Inventory.csproj -->
 <ProjectReference Include="..\..\src\EventEmitter\EventEmitter.csproj" />
-<!-- Only for the OrderCompleted event type. Orders has no reference back to Inventory. -->
-<ProjectReference Include="..\EventEmitter.Sample.Orders\EventEmitter.Sample.Orders.csproj" />
+<ProjectReference Include="..\EventEmitter.Sample.Inventory.Events\EventEmitter.Sample.Inventory.Events.csproj" />
+<!-- Orders' event types only; no reference to the Orders module itself. -->
+<ProjectReference Include="..\EventEmitter.Sample.Orders.Events\EventEmitter.Sample.Orders.Events.csproj" />
 ```
 
 **Each module keeps its listeners `internal`**, so events are the only way in. Orders and Inventory are shown in the [Quick start](#quick-start). Inventory's listener publishes its own event, `StockReserved`, which Shipping handles:
 
 ```csharp
-// samples/EventEmitter.Sample.Inventory/StockReserved.cs
+// samples/EventEmitter.Sample.Inventory.Events/StockReserved.cs
 public sealed record StockReserved(string OrderId, int Items);
 
 // samples/EventEmitter.Sample.Shipping/ShippingListener.cs
@@ -468,7 +471,140 @@ await using var app = await ExampleApp.StartAsync(services => services
     .AddListener<AuditListener>());
 ```
 
-Shipping → Inventory → Orders, and never the reverse. To remove even those references, move each module's event records into a small contracts assembly.
+The resulting project references:
+
+```
+Orders     -> Orders.Events
+Inventory  -> Inventory.Events, Orders.Events
+Shipping   -> Inventory.Events
+hosts      -> Orders, Inventory, Shipping
+```
+
+To add a module, put its public events in a `<Module>.Events` project with no dependencies. Other modules reference that project, never the module itself.
+
+### Module project vs. events project
+
+Each module is split into two projects. Taking Orders as the example:
+
+| | `EventEmitter.Sample.Orders` (module) | `EventEmitter.Sample.Orders.Events` (events) |
+|---|---|---|
+| **Holds** | Behaviour: services, listeners, persistence, DI registration | Data only: the event records, plus any shared event interface such as `IOrderEvent` |
+| **Depends on** | EventEmitter, its own events project, and the events projects of modules it listens to | Nothing: not EventEmitter, not other modules |
+| **Referenced by** | Hosts only (`EventEmitter.Sample`, `EventEmitter.Sample.Web`, the tests) | The module that publishes the events, and every module that listens for them |
+| **Visibility** | Mostly `internal`; public only for what the host needs (`AddOrdersModule`, `OrderService`) | Everything `public` |
+| **Changes** | Freely, since nothing outside the module compiles against it except the host | Carefully, because every listening module compiles against it |
+
+**The events project** is the module's public contract. It holds only what other modules may see:
+
+```csharp
+// samples/EventEmitter.Sample.Orders.Events/OrderEvents.cs
+namespace Codefinity.EventEmitter.Sample.Orders;
+
+public interface IOrderEvent
+{
+    string OrderId { get; }
+}
+
+public sealed record OrderCompleted(string OrderId, string CustomerId) : IOrderEvent;
+
+public sealed record OrderCancelled(string OrderId, string Reason) : IOrderEvent;
+```
+
+```xml
+<!-- samples/EventEmitter.Sample.Orders.Events/EventEmitter.Sample.Orders.Events.csproj (trimmed) -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <!-- No references. An event is any object, so it doesn't need EventEmitter. -->
+</Project>
+```
+
+**The module project** holds everything else. It publishes the events, registers itself, and keeps its internals hidden:
+
+```csharp
+// samples/EventEmitter.Sample.Orders/OrderService.cs (trimmed)
+public sealed class OrderService(IEventPublisher events, ILogger<OrderService> logger)
+{
+    public async Task CompleteAsync(string orderId, string customerId, bool failBeforeCommit = false)
+    {
+        // ...save the order here...
+        await events.PublishAsync(new OrderCompleted(orderId, customerId));
+    }
+}
+
+// samples/EventEmitter.Sample.Orders/OrdersModule.cs
+public static IServiceCollection AddOrdersModule(this IServiceCollection services)
+{
+    services.AddScoped<OrderService>();
+    services.AddEventEmitter();
+    return services;
+}
+```
+
+```xml
+<!-- samples/EventEmitter.Sample.Orders/EventEmitter.Sample.Orders.csproj -->
+<ProjectReference Include="..\..\src\EventEmitter\EventEmitter.csproj" />
+<ProjectReference Include="..\EventEmitter.Sample.Orders.Events\EventEmitter.Sample.Orders.Events.csproj" />
+```
+
+A listening module references only the events project, so it can take `OrderCompleted` as a parameter but can't see `OrderService`:
+
+```csharp
+// samples/EventEmitter.Sample.Inventory/InventoryListener.cs (trimmed)
+using Codefinity.EventEmitter.Sample.Orders;   // resolves to Orders.Events: OrderCompleted, OrderCancelled
+
+internal sealed class InventoryListener(IEventPublisher events, ILogger<InventoryListener> logger)
+{
+    [ApplicationModuleListener(Id = "inventory.reserve-stock")]
+    public async Task On(OrderCompleted evt, CancellationToken cancellationToken) { /* ... */ }
+}
+
+// Doesn't compile in Inventory: OrderService lives in the Orders module, which Inventory doesn't reference.
+// internal sealed class InventoryListener(OrderService orders) { ... }
+```
+
+The events project and the module share the namespace `Codefinity.EventEmitter.Sample.Orders`, so the same `using` works in both. The assembly that a type comes from decides what a module can reach, not the namespace.
+
+#### Why not reference the module directly?
+
+EventEmitter matches listeners by CLR type, so a listener needs the event's type at compile time. It doesn't need anything else from the publishing module. Referencing the whole module brings in more than the event:
+
+1. **Direct calls creep in.** With a reference to `EventEmitter.Sample.Orders`, nothing stops Inventory from injecting `OrderService` and calling `CancelAsync`. The modules are then coupled through code, not events. With only `Orders.Events`, that code doesn't compile.
+2. **Two-way conversations become impossible.** Suppose Orders later needs to react to `StockReserved`, for example to mark the order as ready to ship.
+
+   ```
+   Referencing modules:              Referencing events projects:
+     Inventory -> Orders               Inventory -> Orders.Events
+     Orders    -> Inventory   ✗        Orders    -> Inventory.Events   ✓
+     (circular project reference;
+      MSBuild refuses to build it)
+   ```
+
+   Events projects never reference anything, so they can't form a cycle, however the modules end up talking to each other.
+
+#### What goes where
+
+| Type | Project | Why |
+|---|---|---|
+| `OrderCompleted`, `OrderCancelled` | `Orders.Events` | Other modules listen for them |
+| `IOrderEvent` | `Orders.Events` | Listeners use it to receive every order event (see `AuditListener`) |
+| `OrderService` | `Orders` | Behaviour; only the host calls it |
+| `OrdersModule.AddOrdersModule` | `Orders` | Registration; only the host calls it |
+| A listener class, such as `InventoryListener` | The module that owns it, `internal` | Reached only through events |
+| An internal event that no other module listens for | The module, `internal` | Keeps the public contract small |
+| An enum or value type used inside an event (for example an `OrderStatus` field) | The events project | Listeners need it to read the event |
+
+Keep events plain: records of primitive values, other event-project types, and nothing that pulls in a dependency such as an EF entity or a DTO from the module. If an event needs a type from the module, the type belongs in the events project, or the event should carry the primitive values instead.
+
+#### Changing an event
+
+Listening modules compile against the events project, so treat a change to it as a change to a public API:
+
+- **Adding a property** is safe if it's optional (has a default), because existing `new OrderCompleted(...)` calls and listeners keep compiling.
+- **Renaming or removing a property**, or **renaming the type**, breaks every listener. Add a new event instead and remove the old one once nothing listens for it.
+- **With durable storage**, incomplete publications are stored and republished later, possibly by a newer build. Keep changes backward compatible, or complete the outstanding publications before you deploy the change. See [Custom publication storage](#custom-publication-storage).
+- **Moving an event to another assembly** counts as renaming the type, even when the namespace stays the same. Repositories store `EventType.AssemblyQualifiedName`, which includes the assembly name, so a publication stored as `Codefinity.EventEmitter.Sample.Orders.OrderCompleted, EventEmitter.Sample.Orders` no longer resolves once `OrderCompleted` lives in `EventEmitter.Sample.Orders.Events`. Complete the outstanding publications before you move the event, or have your repository map the old assembly name to the new one when it loads a publication.
 
 ## Transactions
 
@@ -501,8 +637,8 @@ When `PublishAsync` returns, `AuditListener` (an `[EventListener]`) has already 
   [thread  9] OrderService         Completing order-1 for alice
   [thread  9] AuditListener        Audited OrderCompleted for order-1
   [thread  9] OrderService         Committed order-1
-  [thread  9] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders)
-  [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory)
+  [thread  9] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
+  [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory.Events)
   ...
   [thread 14] OrderService         Completing order-2 for bob
   [thread 14] AuditListener        Audited OrderCompleted for order-2
@@ -1119,7 +1255,7 @@ The `--` separates `dotnet run`'s own options from the example names. See [Examp
 ```
   [thread  2] OrderService         Completing order-1 for alice
   [thread  2] AuditListener        Audited OrderCompleted for order-1
-  [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders)
+  [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
 ```
 
 - **`[thread N]`** is the thread that wrote the line. A listener on the publisher's thread ran inline (`[EventListener]`). A listener on another thread ran on a background worker (`[ApplicationModuleListener]`).
@@ -1228,8 +1364,8 @@ Part of the `modules` output:
   [thread  2] OrderService         Completing order-1 for alice
   [thread  2] AuditListener        Audited OrderCompleted for order-1
   [thread  2] OrderService         Committed order-1
-  [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders)
-  [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory)
+  [thread 21] InventoryListener    Reserved stock for order-1 (event from EventEmitter.Sample.Orders.Events)
+  [thread 14] ShippingListener     Booked shipment TRK-order-1 for order-1 (event from EventEmitter.Sample.Inventory.Events)
 ```
 
 ### ASP.NET Core
@@ -1269,19 +1405,21 @@ Every test is quoted in [Testing](#testing).
 ## Repository layout
 
 ```
-assets/                             README header images
+assets/                                     README header images
 src/
-  EventEmitter/                     the library (net8.0; net10.0)
-  EventEmitter.Testing/             PublishedEvents and Scenario
+  EventEmitter/                             the library (net8.0; net10.0)
+  EventEmitter.Testing/                     PublishedEvents and Scenario
 samples/
-  EventEmitter.Sample.Orders/       module: publishes OrderCompleted, OrderCancelled
-  EventEmitter.Sample.Inventory/    module: listens for Orders' events, publishes StockReserved
-  EventEmitter.Sample.Shipping/     module: listens for StockReserved
-  EventEmitter.Sample/              console app with one example per capability
-  EventEmitter.Sample.Web/          ASP.NET Core app with admin endpoints
-  EventEmitter.Sample.Tests/        module tests using EventEmitter.Testing
+  EventEmitter.Sample.Orders.Events/        Orders' event types
+  EventEmitter.Sample.Inventory.Events/     Inventory's event types
+  EventEmitter.Sample.Orders/               module: publishes OrderCompleted, OrderCancelled
+  EventEmitter.Sample.Inventory/            module: listens for Orders' events, publishes StockReserved
+  EventEmitter.Sample.Shipping/             module: listens for StockReserved
+  EventEmitter.Sample/                      console app with one example per capability
+  EventEmitter.Sample.Web/                  ASP.NET Core app with admin endpoints
+  EventEmitter.Sample.Tests/                module tests using EventEmitter.Testing
 tests/
-  EventEmitter.Tests/               the library's own tests
+  EventEmitter.Tests/                       the library's own tests
 ```
 
 Build and test everything:

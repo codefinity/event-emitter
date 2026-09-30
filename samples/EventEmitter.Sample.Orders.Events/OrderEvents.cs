@@ -1,6 +1,7 @@
 namespace Codefinity.EventEmitter.Sample.Orders;
 
-// The Orders module's public events. Other modules may listen for them; nothing else in Orders is their business.
+// The Orders module's public events, in their own assembly so other modules can listen for them
+// without referencing the Orders module itself.
 
 /// <summary>Implemented by every event the Orders module publishes.</summary>
 public interface IOrderEvent

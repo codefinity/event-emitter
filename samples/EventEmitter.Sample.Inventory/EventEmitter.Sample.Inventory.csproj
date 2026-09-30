@@ -7,8 +7,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\EventEmitter\EventEmitter.csproj" />
-    <!-- Only for the OrderCompleted event type. Orders has no reference back to Inventory. -->
-    <ProjectReference Include="..\EventEmitter.Sample.Orders\EventEmitter.Sample.Orders.csproj" />
+    <ProjectReference Include="..\EventEmitter.Sample.Inventory.Events\EventEmitter.Sample.Inventory.Events.csproj" />
+    <!-- Orders' event types only; no reference to the Orders module itself. -->
+    <ProjectReference Include="..\EventEmitter.Sample.Orders.Events\EventEmitter.Sample.Orders.Events.csproj" />
   </ItemGroup>
 
 </Project>
