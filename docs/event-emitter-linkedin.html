@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0E0F14; --muted: #6B6E79; --line: #E4E5EA; --bg: #FAFAFB;
+    --brand: #5B3DF5; --brand-soft: #EEEBFE;
+    --kw: #5B3DF5; --type: #0A7B83; --attr: #B4418E; --str: #A3570B; --cm: #9A9CA6; --fn: #1F4FD1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1350px; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: Inter, sans-serif;
+    position: relative; overflow: hidden;
+  }
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(14,15,20,.09) 1px, transparent 1.4px);
+    background-size: 24px 24px; background-position: 0 0;
+    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 42%, #000 30%, transparent 100%);
+  }
+  .glow {
+    position: absolute; width: 760px; height: 760px; right: -260px; top: -300px;
+    background: radial-gradient(circle, rgba(91,61,245,.16), rgba(91,61,245,0) 65%);
+  }
+  .wrap { position: relative; padding: 64px 60px 0; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 18px; letter-spacing: .16em; color: var(--brand); font-weight: 500; }
+  h1 { margin-top: 20px; font-size: 76px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 700; }
+  h1 .hl { color: var(--brand); }
+  .sub { margin-top: 20px; font-size: 27px; line-height: 1.4; color: var(--muted); letter-spacing: -0.01em; }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  .steps { margin-top: 44px; display: flex; flex-direction: column; gap: 22px; }
+  .step {
+    background: #fff; border: 1px solid var(--line); border-radius: 20px;
+    display: grid; grid-template-columns: 84px 1fr; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(14,15,20,.04), 0 8px 24px -12px rgba(14,15,20,.10);
+  }
+  .num {
+    background: var(--brand-soft); color: var(--brand);
+    font-size: 40px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid var(--line);
+  }
+  .body { padding: 24px 30px 26px; }
+  .head { display: flex; align-items: baseline; gap: 14px; }
+  .title { font-size: 25px; font-weight: 600; letter-spacing: -0.01em; }
+  .note { font-size: 19px; color: var(--muted); }
+  pre {
+    margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 23px; line-height: 1.55;
+    color: var(--ink); white-space: pre;
+  }
+  .k { color: var(--kw); font-weight: 500; }
+  .t { color: var(--type); }
+  .a { color: var(--attr); font-weight: 500; }
+  .f { color: var(--fn); }
+  .c { color: var(--cm); font-style: italic; }
+
+  .chips { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .chip {
+    font-size: 19px; font-weight: 500; padding: 10px 18px; border-radius: 999px;
+    background: #fff; border: 1px solid var(--line); color: var(--ink);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+
+  .foot {
+    position: absolute; left: 60px; right: 60px; bottom: 52px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 20px; color: var(--muted);
+    border-top: 1px solid var(--line); padding-top: 24px;
+  }
+  .foot .repo { color: var(--ink); font-weight: 500; }
+  .foot .repo::before { content: '→ '; color: var(--brand); }
+</style>
+</head>
+<body>
+  <div class="dots"></div>
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="eyebrow">CODEFINITY&nbsp;&nbsp;/&nbsp;&nbsp;EVENTEMITTER FOR .NET</div>
+    <h1>Decouple your modules<br>in <span class="hl">3 steps.</span></h1>
+    <p class="sub">Publish a plain event. React to it anywhere.<br><b>No interfaces, no base classes, no module references.</b></p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <div class="head"><span class="title">Publish</span><span class="note">any object is an event</span></div>
+<pre><span class="k">await</span> events.<span class="f">PublishAsync</span>(<span class="k">new</span> <span class="t">OrderCompleted</span>(orderId));</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <div class="head"><span class="title">Listen</span><span class="note">just an attribute on a method</span></div>
+<pre><span class="c">// Inventory module: runs in the background, after commit</span>
+[<span class="a">ApplicationModuleListener</span>]
+<span class="k">public async</span> <span class="t">Task</span> <span class="f">Reserve</span>(<span class="t">OrderCompleted</span> e) { … }
+
+<span class="c">// Notifications module: own DI scope, tracked delivery</span>
+[<span class="a">ApplicationModuleListener</span>]
+<span class="k">public void</span> <span class="f">SendReceipt</span>(<span class="t">OrderCompleted</span> e) { … }</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <div class="head"><span class="title">Register</span><span class="note">one line per module</span></div>
+<pre>services.<span class="f">AddEventEmitter</span>()
+    .<span class="f">AddListener</span>&lt;<span class="t">InventoryListener</span>&gt;();</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <span class="chip">Runs after commit</span>
+      <span class="chip">Failed deliveries resubmittable</span>
+      <span class="chip">Test helpers built in</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="repo">github.com/codefinity/event-emitter</span>
+    <span>.NET 8 · .NET 10 · MIT</span>
+  </div>
+</body>
+</html>
