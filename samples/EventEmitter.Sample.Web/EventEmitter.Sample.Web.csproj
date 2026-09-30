@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EventEmitter\EventEmitter.csproj" />
+    <ProjectReference Include="..\EventEmitter.Sample.Orders\EventEmitter.Sample.Orders.csproj" />
+    <ProjectReference Include="..\EventEmitter.Sample.Inventory\EventEmitter.Sample.Inventory.csproj" />
+    <ProjectReference Include="..\EventEmitter.Sample.Shipping\EventEmitter.Sample.Shipping.csproj" />
+  </ItemGroup>
+
+</Project>

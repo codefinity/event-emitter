@@ -1,0 +1,41 @@
+# Requests for EventEmitter.Sample.Web. Run the app with:
+#   dotnet run --project samples/EventEmitter.Sample.Web
+# then send these from VS Code (REST Client) or Visual Studio, top to bottom.
+
+@host = http://localhost:5087
+
+### 1. Complete an order: Orders -> Inventory -> Shipping
+POST {{host}}/orders/order-1/complete?customer=alice
+
+### 2. The shipment booked by the Shipping module
+GET {{host}}/shipments
+
+### 3. Every listener that handled an event
+GET {{host}}/admin/events/completed
+
+### 4. Take the carrier down, then complete another order
+PUT {{host}}/carrier?available=false
+
+###
+POST {{host}}/orders/order-2/complete?customer=bob
+
+### 5. Shipping's publication is incomplete, with the failure recorded
+GET {{host}}/admin/events/incomplete
+
+### 6. Bring the carrier back and resubmit Shipping's publications
+PUT {{host}}/carrier?available=true
+
+###
+POST {{host}}/admin/events/resubmit?listenerId=shipping.book-shipment
+
+### 7. Nothing is incomplete any more, and order-2 has shipped
+GET {{host}}/admin/events/incomplete
+
+###
+GET {{host}}/shipments
+
+### 8. Cancelling an order releases its stock (see the app's log)
+POST {{host}}/orders/order-3/cancel?reason=changed%20mind
+
+### 9. Clean up completed publications older than 7 days
+DELETE {{host}}/admin/events/completed?olderThanDays=7
