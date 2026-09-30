@@ -96,13 +96,13 @@
         <div class="num">2</div>
         <div class="body">
           <div class="head"><span class="title">Listen</span><span class="note">just an attribute on a method</span></div>
-<pre><span class="c">// inline, inside the publisher's transaction</span>
-[<span class="a">EventListener</span>]
-<span class="k">public void</span> <span class="f">Validate</span>(<span class="t">OrderCompleted</span> e) { … }
-
-<span class="c">// in the background, after the commit</span>
+<pre><span class="c">// Inventory module: runs in the background, after commit</span>
 [<span class="a">ApplicationModuleListener</span>]
-<span class="k">public async</span> <span class="t">Task</span> <span class="f">Reserve</span>(<span class="t">OrderCompleted</span> e) { … }</pre>
+<span class="k">public async</span> <span class="t">Task</span> <span class="f">Reserve</span>(<span class="t">OrderCompleted</span> e) { … }
+
+<span class="c">// Notifications module: own DI scope, tracked delivery</span>
+[<span class="a">ApplicationModuleListener</span>]
+<span class="k">public void</span> <span class="f">SendReceipt</span>(<span class="t">OrderCompleted</span> e) { … }</pre>
         </div>
       </div>
 
@@ -117,7 +117,7 @@
     </div>
 
     <div class="chips">
-      <span class="chip">Async after commit</span>
+      <span class="chip">Runs after commit</span>
       <span class="chip">Failed deliveries resubmittable</span>
       <span class="chip">Test helpers built in</span>
     </div>
