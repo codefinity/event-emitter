@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Sample: run all examples",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-sample",
+      "program": "${workspaceFolder}/samples/EventEmitter.Sample/bin/Debug/net10.0/EventEmitter.Sample.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/samples/EventEmitter.Sample",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Sample: run one example (pick)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-sample",
+      "program": "${workspaceFolder}/samples/EventEmitter.Sample/bin/Debug/net10.0/EventEmitter.Sample.dll",
+      "args": ["${input:example}"],
+      "cwd": "${workspaceFolder}/samples/EventEmitter.Sample",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Web sample",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build-web",
+      "program": "${workspaceFolder}/samples/EventEmitter.Sample.Web/bin/Debug/net10.0/EventEmitter.Sample.Web.dll",
+      "cwd": "${workspaceFolder}/samples/EventEmitter.Sample.Web",
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development", "ASPNETCORE_URLS": "http://localhost:5087" },
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "example",
+      "type": "pickString",
+      "description": "Example to run",
+      "options": ["modules", "transactions", "listener-methods", "supertypes", "ordering", "sync-failure", "resubmit", "retry-job", "completion-modes", "durable-storage", "unit-of-work", "parallelism", "validation"],
+      "default": "modules"
+    }
+  ]
+}

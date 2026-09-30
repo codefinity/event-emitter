@@ -24,17 +24,24 @@ internal static class RetryJobExample
         {
             using var timer = new PeriodicTimer(policy.Interval);
 
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            try
             {
-                // Attempts > 0: it has failed at least once. Below the maximum: we haven't given up on it.
-                var count = await incomplete.ResubmitAsync(
-                    p => p.Attempts > 0 && p.Attempts < policy.MaxAttempts,
-                    stoppingToken);
-
-                if (count > 0)
+                while (await timer.WaitForNextTickAsync(stoppingToken))
                 {
-                    logger.LogInformation("Resubmitted {Count} failed publication(s)", count);
+                    // Attempts > 0: it has failed at least once. Below the maximum: we haven't given up on it.
+                    var count = await incomplete.ResubmitAsync(
+                        p => p.Attempts > 0 && p.Attempts < policy.MaxAttempts,
+                        stoppingToken);
+
+                    if (count > 0)
+                    {
+                        logger.LogInformation("Resubmitted {Count} failed publication(s)", count);
+                    }
                 }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // The host is shutting down; that is the normal way for this job to end.
             }
         }
     }

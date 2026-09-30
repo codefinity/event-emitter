@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-sample",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/samples/EventEmitter.Sample/EventEmitter.Sample.csproj", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary"],
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "build-web",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/samples/EventEmitter.Sample.Web/EventEmitter.Sample.Web.csproj", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary"],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}
