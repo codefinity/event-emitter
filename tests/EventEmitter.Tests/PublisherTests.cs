@@ -14,9 +14,6 @@ public class PublisherTests
 {
     private sealed class TickListener(CallLog calls)
     {
-        [EventListener]
-        public void Inline(Tick evt) => calls.Record("inline", evt);
-
         [ApplicationModuleListener]
         public void Background(Tick evt) => calls.Record("background", evt);
 
@@ -24,26 +21,8 @@ public class PublisherTests
         public void ByInterface(ITick evt) => calls.Record("interface", evt);
     }
 
-    private sealed class TokenBox
-    {
-        public CancellationToken Token { get; set; }
-    }
-
-    private sealed class TokenListener(TokenBox box)
-    {
-        [EventListener]
-        public void On(Ping evt, CancellationToken cancellationToken)
-        {
-            box.Token = cancellationToken;
-            cancellationToken.ThrowIfCancellationRequested();
-        }
-    }
-
     private sealed class CompletedOnly(CallLog calls)
     {
-        [EventListener]
-        public void Inline(OrderCompleted evt) => calls.Record("inline", evt);
-
         [ApplicationModuleListener]
         public void Background(OrderCompleted evt) => calls.Record("background", evt);
     }
@@ -59,32 +38,28 @@ public class PublisherTests
     }
 
     [Fact]
-    public async Task Value_type_events_reach_every_kind_of_listener()
+    public async Task Value_type_events_reach_listeners_for_the_type_and_its_interfaces()
     {
         await using var app = await TestApp.StartAsync(b => b.AddListener<TickListener>());
 
         await app.PublishAsync(new Tick(7));
 
-        await Eventually.AssertAsync(() => app.Calls.All.Count == 3, "all three listeners ran");
+        await Eventually.AssertAsync(() => app.Calls.All.Count == 2, "both listeners ran");
         Assert.All(app.Calls.All, c => Assert.Equal(new Tick(7), c.Event));
-        Assert.Equal(["background", "inline", "interface"], app.Calls.Listeners.Order());
+        Assert.Equal(["background", "interface"], app.Calls.Listeners.Order());
     }
 
     [Fact]
-    public async Task Synchronous_listeners_receive_the_publishers_cancellation_token()
+    public async Task Events_without_listeners_create_no_publications()
     {
-        await using var app = await TestApp.StartAsync(
-            b => b.AddListener<TokenListener>(),
-            services: s => s.AddSingleton<TokenBox>());
-        await using var scope = app.Services.CreateAsyncScope();
-        var publisher = scope.ServiceProvider.GetRequiredService<IEventPublisher>();
+        await using var app = await TestApp.StartAsync(b => b.AddListener<CompletedOnly>());
 
-        using var cts = new CancellationTokenSource();
-        await publisher.PublishAsync(new Ping(1), cts.Token);
-        Assert.Equal(cts.Token, app.Services.GetRequiredService<TokenBox>().Token);
+        await app.PublishAsync(new Ping(1));
+        await Task.Delay(100);
 
-        await cts.CancelAsync();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => publisher.PublishAsync(new Ping(2), cts.Token));
+        Assert.Empty(app.Calls.All);
+        Assert.Empty(await app.Incomplete.FindAllAsync());
+        Assert.Empty(await app.Completed.FindAllAsync());
     }
 
     [Fact]
@@ -96,7 +71,7 @@ public class PublisherTests
 
         await scope.ServiceProvider.GetRequiredService<IEventPublisher>().PublishAsync(evt);
 
-        await Eventually.AssertAsync(() => app.Calls.All.Count == 2, "both listeners ran");
+        await Eventually.AssertAsync(() => app.Calls.All.Count == 1, "the listener ran");
     }
 
     [Fact]
@@ -107,8 +82,8 @@ public class PublisherTests
 
         await app.PublishAsync(evt);
 
-        await Eventually.AssertAsync(() => app.Calls.All.Count == 2, "both listeners ran");
-        Assert.All(app.Calls.All, c => Assert.Same(evt, c.Event));
+        await Eventually.AssertAsync(() => app.Calls.All.Count == 1, "the listener ran");
+        Assert.Same(evt, Assert.Single(app.Calls.All).Event);
         Assert.Same(evt, Assert.Single(await app.Completed.FindAllAsync()).Event);
     }
 

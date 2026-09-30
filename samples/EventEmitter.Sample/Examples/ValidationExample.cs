@@ -20,32 +20,25 @@ internal static class ValidationExample
 
     private sealed class NoParameters
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On() { }
     }
 
     private sealed class ExtraParameter
     {
-        [EventListener]
-        public void On(OrderCompleted evt, string note) { }
-    }
-
-    private sealed class BothAttributes
-    {
-        [EventListener]
         [ApplicationModuleListener]
-        public void On(OrderCompleted evt) { }
+        public void On(OrderCompleted evt, string note) { }
     }
 
     private sealed class StaticMethod
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public static void On(OrderCompleted evt) { }
     }
 
     private sealed class ReturnsInt
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public int On(OrderCompleted evt) => 0;
     }
 
@@ -56,7 +49,7 @@ internal static class ValidationExample
 
     private sealed class SameIdAgain
     {
-        [EventListener(Id = "loyalty.award-points")]
+        [ApplicationModuleListener(Id = "loyalty.award-points")]
         public void On(OrderCompleted evt) { }
     }
 
@@ -77,7 +70,7 @@ internal static class ValidationExample
         app.Say("Registering invalid listeners fails immediately, naming the method:");
         foreach (var invalid in new[]
                  {
-                     typeof(NoParameters), typeof(ExtraParameter), typeof(BothAttributes), typeof(StaticMethod),
+                     typeof(NoParameters), typeof(ExtraParameter), typeof(StaticMethod),
                      typeof(ReturnsInt), typeof(NoListenerMethods),
                  })
         {

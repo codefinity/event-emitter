@@ -8,24 +8,24 @@ public class ListenerDiscoveryTests
 {
     private sealed class ManyMethods(CallLog calls)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void VoidMethod(Ping evt) => calls.Record(nameof(VoidMethod), evt);
 
-        [EventListener]
+        [ApplicationModuleListener]
         public Task TaskWithToken(Ping evt, CancellationToken cancellationToken)
         {
             calls.Record(nameof(TaskWithToken), evt);
             return Task.CompletedTask;
         }
 
-        [EventListener]
+        [ApplicationModuleListener]
         public Task<int> TaskOfT(Ping evt)
         {
             calls.Record(nameof(TaskOfT), evt);
             return Task.FromResult(evt.N);
         }
 
-        [EventListener]
+        [ApplicationModuleListener]
         private ValueTask PrivateValueTask(Ping evt)
         {
             calls.Record(nameof(PrivateValueTask), evt);
@@ -51,38 +51,31 @@ public class ListenerDiscoveryTests
 
     private sealed class NoParameters
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On() { }
     }
 
     private sealed class WrongSecondParameter
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(Ping evt, string text) { }
     }
 
     private sealed class StaticMethod
     {
-        [EventListener]
-        public static void On(Ping evt) { }
-    }
-
-    private sealed class BothAttributes
-    {
-        [EventListener]
         [ApplicationModuleListener]
-        public void On(Ping evt) { }
+        public static void On(Ping evt) { }
     }
 
     private sealed class UnsupportedReturnType
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public int On(Ping evt) => evt.N;
     }
 
     private sealed class RefParameter
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(ref Ping evt) { }
     }
 
@@ -93,37 +86,37 @@ public class ListenerDiscoveryTests
 
     private sealed class GenericMethod
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On<T>(T evt) { }
     }
 
     private sealed class ThreeParameters
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(Ping evt, CancellationToken cancellationToken, int extra) { }
     }
 
     private sealed class InParameter
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(in Ping evt) { }
     }
 
     private sealed class OpenGeneric<T>
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(T evt) { }
     }
 
     private abstract class AbstractListener
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(Ping evt) { }
     }
 
     private sealed class FirstWithId
     {
-        [EventListener(Id = "shared")]
+        [ApplicationModuleListener(Id = "shared")]
         public void On(Ping evt) { }
     }
 
@@ -166,7 +159,6 @@ public class ListenerDiscoveryTests
     [InlineData(typeof(NoParameters), "must take the event as its first parameter")]
     [InlineData(typeof(WrongSecondParameter), "only a CancellationToken is allowed")]
     [InlineData(typeof(StaticMethod), "must be an instance method")]
-    [InlineData(typeof(BothAttributes), "both [EventListener] and [ApplicationModuleListener]")]
     [InlineData(typeof(UnsupportedReturnType), "must return void, Task or ValueTask")]
     [InlineData(typeof(RefParameter), "by value")]
     [InlineData(typeof(NoListenerMethods), "has no methods marked")]
@@ -220,12 +212,24 @@ public class ListenerDiscoveryTests
     }
 
     [Fact]
-    public void Scans_assemblies_for_classes_with_listener_methods()
+    public void Assembly_scanning_skips_classes_without_listener_methods()
     {
         var services = new ServiceCollection();
         services.AddEventEmitter().AddListenersFromAssemblyContaining<PublishedEvents>();
 
         var registry = (ListenerRegistry)services.Single(d => d.ServiceType == typeof(ListenerRegistry)).ImplementationInstance!;
-        Assert.Equal([typeof(PublishedEvents)], registry.ListenerTypes);
+        Assert.Empty(registry.ListenerTypes);
+        Assert.DoesNotContain(services, d => d.ServiceType == typeof(PublishedEvents));
+    }
+
+    [Fact]
+    public void Assembly_scanning_validates_the_listeners_it_finds()
+    {
+        // This assembly holds the invalid listeners above, so scanning it must fail.
+        var builder = new ServiceCollection().AddEventEmitter();
+
+        var ex = Assert.Throws<InvalidOperationException>(() => builder.AddListenersFromAssemblyContaining<ListenerDiscoveryTests>());
+
+        Assert.StartsWith("Listener ", ex.Message);
     }
 }

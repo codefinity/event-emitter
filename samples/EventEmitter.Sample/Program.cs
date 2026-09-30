@@ -12,8 +12,6 @@ using Codefinity.EventEmitter.Sample.Examples;
     ("transactions", "Module listeners run after commit, never after rollback", TransactionsExample.RunAsync),
     ("listener-methods", "Every supported listener method shape", ListenerMethodsExample.RunAsync),
     ("supertypes", "Listening for interfaces, base types and object", SupertypesExample.RunAsync),
-    ("ordering", "Ordering synchronous listeners", OrderingExample.RunAsync),
-    ("sync-failure", "A failing synchronous listener stops the publish", SynchronousFailureExample.RunAsync),
     ("resubmit", "Inspecting and resubmitting failed publications", ResubmitExample.RunAsync),
     ("retry-job", "Automatic retries with a background job and an attempt limit", RetryJobExample.RunAsync),
     ("completion-modes", "Keeping or deleting completed publications", CompletionModesExample.RunAsync),

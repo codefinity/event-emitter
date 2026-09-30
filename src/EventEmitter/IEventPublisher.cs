@@ -5,9 +5,9 @@ namespace Codefinity.EventEmitter;
 /// The .NET counterpart of Spring's <c>ApplicationEventPublisher</c>.
 /// </summary>
 /// <remarks>
-/// Methods marked with <see cref="EventListenerAttribute"/> run inline, in the caller's DI scope, before this call returns.
-/// Methods marked with <see cref="ApplicationModuleListenerAttribute"/> are recorded as event publications and run
-/// on a background worker once the ambient transaction (if any) commits.
+/// Each matching method marked with <see cref="ApplicationModuleListenerAttribute"/> is recorded as an event
+/// publication and runs on a background worker once the ambient transaction (if any) commits. No listener runs
+/// before this call returns.
 /// </remarks>
 public interface IEventPublisher
 {

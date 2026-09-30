@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-    <Description>In-process application events in the style of Spring Modulith: synchronous and after-commit asynchronous listeners with an event publication registry.</Description>
+    <Description>In-process application events in the style of Spring Modulith: after-commit asynchronous listeners with an event publication registry.</Description>
   </PropertyGroup>
 
   <ItemGroup>

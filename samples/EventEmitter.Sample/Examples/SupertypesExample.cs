@@ -21,14 +21,14 @@ internal static class SupertypesExample
 
     private sealed class CancellationsOnly(ILogger<CancellationsOnly> logger)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(OrderCancelled evt) =>
             logger.LogInformation("OrderCancelled listener got {Reason}", evt.Reason);
     }
 
     private sealed class EverythingListener(ILogger<EverythingListener> logger)
     {
-        [EventListener]
+        [ApplicationModuleListener]
         public void On(object evt) =>
             logger.LogInformation("object listener got {Event}", evt.GetType().Name);
     }
@@ -50,6 +50,7 @@ internal static class SupertypesExample
         app.Say("Publishing StockReserved (not an IOrderEvent):");
         await app.PublishAsync(new StockReserved("order-1", Items: 3));
 
-        await app.WaitForCompletedAsync(2);
+        // OrderCompleted reaches 2 listeners, OrderCancelled 3 and StockReserved 1.
+        await app.WaitForCompletedAsync(6);
     }
 }

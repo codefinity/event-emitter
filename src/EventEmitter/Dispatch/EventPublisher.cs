@@ -1,11 +1,9 @@
 using Codefinity.EventEmitter.Listeners;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Codefinity.EventEmitter.Dispatch;
 
 internal sealed class EventPublisher(
-    IServiceProvider services,
     ListenerRegistry registry,
     IEventPublicationRepository repository,
     AsyncEventDispatcher dispatcher,
@@ -19,20 +17,13 @@ internal sealed class EventPublisher(
 
         var eventType = evt.GetType();
         var listeners = registry.GetListeners(eventType);
-
-        foreach (var listener in listeners.Synchronous)
-        {
-            var instance = services.GetRequiredService(listener.ListenerType);
-            await listener.Invoker(instance, evt, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (listeners.ApplicationModule.Length == 0)
+        if (listeners.Length == 0)
         {
             return;
         }
 
         var publishedAt = time.GetUtcNow();
-        var publications = listeners.ApplicationModule
+        var publications = listeners
             .Select(l => new EventPublication(Guid.NewGuid(), evt, eventType, l.Id, publishedAt))
             .ToArray();
 

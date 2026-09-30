@@ -4,12 +4,6 @@ namespace Codefinity.EventEmitter.Tests;
 
 public class TransactionTests
 {
-    private sealed class AuditListener(CallLog calls)
-    {
-        [EventListener]
-        public void On(OrderCompleted evt) => calls.Record("audit", evt);
-    }
-
     private sealed class InventoryListener(CallLog calls)
     {
         [ApplicationModuleListener]
@@ -19,16 +13,14 @@ public class TransactionTests
     [Fact]
     public async Task Module_listeners_run_only_after_commit()
     {
-        await using var app = await TestApp.StartAsync(b => b
-            .AddListener<AuditListener>()
-            .AddListener<InventoryListener>());
+        await using var app = await TestApp.StartAsync(b => b.AddListener<InventoryListener>());
 
         using (var transaction = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
             await app.PublishAsync(new OrderCompleted(Guid.NewGuid()));
             await Task.Delay(100);
 
-            Assert.Equal(["audit"], app.Calls.Listeners);
+            Assert.Empty(app.Calls.All);
             transaction.Complete();
         }
 
@@ -38,9 +30,7 @@ public class TransactionTests
     [Fact]
     public async Task Rollback_discards_module_deliveries()
     {
-        await using var app = await TestApp.StartAsync(b => b
-            .AddListener<AuditListener>()
-            .AddListener<InventoryListener>());
+        await using var app = await TestApp.StartAsync(b => b.AddListener<InventoryListener>());
 
         using (new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
         {
@@ -49,7 +39,7 @@ public class TransactionTests
 
         await Eventually.AssertAsync(async () => (await app.Incomplete.FindAllAsync()).Count == 0, "publications were deleted");
         await Task.Delay(100);
-        Assert.Equal(["audit"], app.Calls.Listeners);
+        Assert.Empty(app.Calls.All);
         Assert.Empty(await app.Completed.FindAllAsync());
     }
 

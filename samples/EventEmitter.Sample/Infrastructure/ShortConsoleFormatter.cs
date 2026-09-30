@@ -6,7 +6,7 @@ namespace Codefinity.EventEmitter.Sample.Infrastructure;
 
 /// <summary>
 /// One line per log entry: the thread that logged it, the short category name, and the message.
-/// The thread id is what shows whether a listener ran inline or on a background worker.
+/// The thread id shows that listeners run on background workers, apart from the publisher's work.
 /// </summary>
 internal sealed class ShortConsoleFormatter() : ConsoleFormatter(FormatterName)
 {

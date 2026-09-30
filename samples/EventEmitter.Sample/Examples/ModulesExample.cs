@@ -1,4 +1,3 @@
-using Codefinity.EventEmitter.Sample.Audit;
 using Codefinity.EventEmitter.Sample.Infrastructure;
 using Codefinity.EventEmitter.Sample.Inventory;
 using Codefinity.EventEmitter.Sample.Orders;
@@ -18,13 +17,11 @@ internal static class ModulesExample
         await using var app = await ExampleApp.StartAsync(services => services
             .AddOrdersModule()       // EventEmitter.Sample.Orders.dll
             .AddInventoryModule()    // EventEmitter.Sample.Inventory.dll
-            .AddShippingModule()     // EventEmitter.Sample.Shipping.dll
-            .AddEventEmitter()
-            .AddListener<AuditListener>());
+            .AddShippingModule());   // EventEmitter.Sample.Shipping.dll
 
         app.Say("Completing order-1. OrderService only has an IEventPublisher; it can't see Inventory or Shipping.");
         await app.InScopeAsync(sp => sp.GetRequiredService<OrderService>().CompleteAsync("order-1", "alice"));
-        app.Say("CompleteAsync has returned. The audit ran inline on the same thread; the rest happens in the background:");
+        app.Say("CompleteAsync has returned. Inventory and Shipping run in the background, on other threads:");
 
         var carrier = app.Get<CarrierGateway>();
         await app.WaitUntilAsync(() => carrier.Shipments.ContainsKey("order-1"));
