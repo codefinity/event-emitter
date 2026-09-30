@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
+  <img alt="EventEmitter: in-process application events for .NET" src="assets/header-light.svg" width="100%">
+</picture>
+
 # EventEmitter
 
 In-process application events for .NET, modeled on [Spring Modulith](https://docs.spring.io/spring-modulith/reference/events.html).
@@ -1264,6 +1269,7 @@ Every test is quoted in [Testing](#testing).
 ## Repository layout
 
 ```
+assets/                             README header images
 src/
   EventEmitter/                     the library (net8.0; net10.0)
   EventEmitter.Testing/             PublishedEvents and Scenario
